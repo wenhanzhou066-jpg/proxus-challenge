@@ -1,0 +1,96 @@
+import type { UserMode } from "../domain/personality/types.ts";
+
+interface Props {
+  onChoose: (mode: UserMode) => void;
+}
+
+export function OnboardingChoice({ onChoose }: Props) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/95 p-6 backdrop-blur">
+      <div className="relative w-full max-w-4xl">
+        <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-indigo-500/20 via-fuchsia-500/20 to-emerald-500/20 blur-3xl" />
+        <div className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl sm:p-12">
+          <div className="mb-8 text-center">
+            <p className="text-xs uppercase tracking-[0.3em] text-indigo-400">Welcome</p>
+            <h1 className="mt-3 bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-4xl font-bold text-transparent sm:text-5xl">
+              How do you want to study?
+            </h1>
+            <p className="mx-auto mt-4 max-w-xl text-slate-400">
+              Pick your path. You can change this any time from settings.
+            </p>
+          </div>
+
+          <div className="grid gap-5 sm:grid-cols-2">
+            <ModeCard
+              title="Free mode"
+              subtitle="Explore on your own"
+              description="Jump straight into the app. Pick tools yourself: flashcards, tests, summaries, chat with the tutor."
+              gradient="from-slate-700 via-slate-600 to-slate-500"
+              badge="Full control"
+              onClick={() => onChoose("free")}
+            />
+            <ModeCard
+              title="Guided by personality"
+              subtitle="3-min quiz first"
+              description="Take a quick color test. We recommend study methods that match how you learn best — tests, flashcards, summaries, and more."
+              gradient="from-indigo-500 via-fuchsia-500 to-rose-500"
+              badge="Recommended"
+              onClick={() => onChoose("guided")}
+              highlight
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface CardProps {
+  title: string;
+  subtitle: string;
+  description: string;
+  gradient: string;
+  badge: string;
+  onClick: () => void;
+  highlight?: boolean;
+}
+
+function ModeCard({ title, subtitle, description, gradient, badge, onClick, highlight }: CardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`group relative overflow-hidden rounded-2xl border p-6 text-left transition hover:scale-[1.02] hover:shadow-xl ${
+        highlight
+          ? "border-fuchsia-500/40 bg-slate-900"
+          : "border-slate-700 bg-slate-900/60"
+      }`}
+    >
+      <div
+        className={`absolute inset-0 bg-gradient-to-br opacity-10 transition group-hover:opacity-25 ${gradient}`}
+      />
+      <div className="relative">
+        <div className="mb-4 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">
+            {subtitle}
+          </span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+              highlight
+                ? "bg-fuchsia-500/20 text-fuchsia-300"
+                : "bg-slate-800 text-slate-400"
+            }`}
+          >
+            {badge}
+          </span>
+        </div>
+        <h2 className="text-2xl font-bold text-white">{title}</h2>
+        <p className="mt-3 text-sm leading-relaxed text-slate-400">{description}</p>
+        <div className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-white">
+          Choose
+          <span className="transition group-hover:translate-x-1">→</span>
+        </div>
+      </div>
+    </button>
+  );
+}
