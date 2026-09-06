@@ -4,6 +4,7 @@ import type { Profile } from "../domain/personality/types.ts";
 import { COLOR_GRADIENT, COLOR_LABEL, COLOR_METHODS } from "../domain/personality/types.ts";
 import { PdfPreviewModal } from "./PdfPreviewModal.tsx";
 
+
 interface StudyOption {
   readonly id: string;
   readonly title: string;
@@ -56,6 +57,7 @@ interface Props {
   readonly hasAssignments?: boolean;
   readonly onPick: (prompt: string) => void;
   readonly onOpenCreateAssignment?: () => void;
+  readonly onOpenMaterialPreview?: (materialId: string) => void;
 }
 
 function formatSize(bytes: number): string {
@@ -64,9 +66,17 @@ function formatSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function StudyMenu({ profile, currentAssignment = null, hasAssignments = true, onPick, onOpenCreateAssignment }: Props) {
+export function StudyMenu({ profile, currentAssignment = null, hasAssignments = true, onPick, onOpenCreateAssignment, onOpenMaterialPreview }: Props) {
   const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  const openMaterial = (material: Material) => {
+    if (onOpenMaterialPreview !== undefined) {
+      onOpenMaterialPreview(material.id);
+    } else {
+      setPreviewMaterial(material);
+    }
+  };
 
   const allTags = currentAssignment === null
     ? []
@@ -164,7 +174,7 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
               <li key={material.id}>
                 <button
                   type="button"
-                  onClick={() => setPreviewMaterial(material)}
+                  onClick={() => openMaterial(material)}
                   className="flex w-full items-start justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-left transition hover:border-sky-400 focus-visible:border-sky-400 focus-visible:outline-none"
                 >
                   <div className="min-w-0">

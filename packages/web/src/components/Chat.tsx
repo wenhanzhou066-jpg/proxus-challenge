@@ -18,6 +18,8 @@ interface ChatProps {
   readonly currentAssignment?: Assignment | null;
   readonly onOpenCreateAssignment?: () => void;
   readonly onResetPreferences?: () => void;
+  readonly onToggleSidebar?: () => void;
+  readonly onOpenMaterialPreview?: (materialId: string) => void;
 }
 
 export function Chat({
@@ -25,7 +27,9 @@ export function Chat({
   assignments = [],
   currentAssignment = null,
   onOpenCreateAssignment,
-  onResetPreferences
+  onResetPreferences,
+  onToggleSidebar,
+  onOpenMaterialPreview
 }: ChatProps) {
   const assignmentKey = currentAssignment?.id ?? null;
   const [messages, setMessages] = useState<readonly AgentMessage[]>(() => {
@@ -111,9 +115,23 @@ export function Chat({
   };
 
   return (
-    <main className="grid h-screen max-h-screen min-w-0 grid-rows-[auto_1fr_auto_auto] bg-slate-950 max-md:h-auto max-md:max-h-none">
-      <header className="flex items-center justify-between gap-4 border-slate-800 border-b px-6 py-5">
-        <div className="min-w-0">
+    <main className="grid h-screen max-h-screen min-w-0 flex-1 grid-rows-[auto_1fr_auto_auto] bg-slate-950 max-md:h-auto max-md:max-h-none">
+      <header className="flex items-center justify-between gap-4 border-slate-800 border-b px-4 py-5">
+        <div className="flex shrink-0 items-center gap-1">
+          {onToggleSidebar !== undefined && (
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              title="Toggle sidebar"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
+            >
+              <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
           <h1 className="m-0 truncate font-bold text-2xl text-slate-100">
             {currentAssignment !== null ? currentAssignment.title : "Academic tutor"}
           </h1>
@@ -125,10 +143,10 @@ export function Chat({
               : "Ephemeral session — chat resets on refresh."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           {onResetPreferences !== undefined && (
             <button
-              className="rounded-full border border-slate-700 px-4 py-2 text-slate-200 hover:border-fuchsia-400"
+              className="hidden rounded-full border border-slate-700 px-4 py-2 text-slate-200 text-sm transition hover:border-fuchsia-400 sm:inline-block"
               type="button"
               onClick={onResetPreferences}
               title="Redo the personality quiz and reset your mode"
@@ -137,12 +155,13 @@ export function Chat({
             </button>
           )}
           <button
-            className="rounded-full border border-slate-700 px-4 py-2 text-slate-200 hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-full border border-slate-700 px-3 py-1.5 text-slate-200 text-sm transition hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2"
             type="button"
             onClick={clearChat}
             disabled={messages.length === 0}
+            title="Clear chat"
           >
-            Clear chat
+            Clear
           </button>
         </div>
       </header>
@@ -155,6 +174,7 @@ export function Chat({
               hasAssignments={assignments.length > 0}
               onPick={(prompt) => void submit(prompt)}
               {...(onOpenCreateAssignment !== undefined ? { onOpenCreateAssignment } : {})}
+              {...(onOpenMaterialPreview !== undefined ? { onOpenMaterialPreview } : {})}
             />
           : messages.map((message, index) => <MessageBubble key={index} message={message} />)}
       </section>

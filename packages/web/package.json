@@ -15,8 +15,10 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "effect": "4.0.0-beta.83",
+    "pdfjs-dist": "^5.4.296",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
+    "react-pdf": "^10.5.0",
     "streamdown": "^2.5.0",
     "tailwindcss": "^4.3.1"
   },

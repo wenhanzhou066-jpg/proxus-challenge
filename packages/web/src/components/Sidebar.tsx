@@ -15,6 +15,9 @@ interface SidebarProps {
   readonly onOpenCreateAssignment?: () => void;
   readonly onDeleteAssignment?: (id: string) => void;
   readonly onRenameAssignment?: (id: string, newTitle: string) => void;
+  readonly collapsed?: boolean;
+  readonly width?: number;
+  readonly onToggleCollapse?: () => void;
 }
 
 export function Sidebar({
@@ -25,7 +28,10 @@ export function Sidebar({
   onSelectAssignment,
   onOpenCreateAssignment,
   onDeleteAssignment,
-  onRenameAssignment
+  onRenameAssignment,
+  collapsed = false,
+  width = 300,
+  onToggleCollapse
 }: SidebarProps) {
   const materials = useAtomValue(materialsQuery);
   const artifacts = useAtomValue(artifactsQuery);
@@ -63,17 +69,71 @@ export function Sidebar({
 
   const deletingAssignment = deletingId !== null ? assignments.find((a) => a.id === deletingId) ?? null : null;
 
+  if (collapsed) {
+    return (
+      <>
+        {deletingAssignment !== null && createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setDeletingId(null)}
+          >
+            <div
+              className="w-full max-w-[320px] rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h2 className="font-bold text-slate-100 text-base">Delete assignment?</h2>
+              <p className="mt-2 text-slate-400 text-sm">
+                "<span className="font-semibold text-slate-200">{deletingAssignment.title}</span>"
+              </p>
+              <p className="mt-1 text-rose-400 text-xs font-medium">This action is irreversible.</p>
+              <div className="mt-5 flex justify-center gap-2">
+                <button type="button" onClick={() => setDeletingId(null)} className="rounded-full border border-slate-700 px-4 py-2 text-slate-300 text-sm transition hover:border-slate-500">
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { if (onDeleteAssignment !== undefined) onDeleteAssignment(deletingAssignment.id); setDeletingId(null); }}
+                  className="rounded-full bg-rose-600 px-5 py-2 font-bold text-white text-sm ring-2 ring-rose-500/60 shadow-lg shadow-rose-700/40 transition hover:bg-rose-500 hover:ring-rose-400/70"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      </>
+    );
+  }
+
   return (
     <>
-    <aside className="h-screen overflow-y-auto border-slate-800 border-r bg-slate-950 px-3 py-5 max-md:h-auto max-md:max-h-[45vh] max-md:border-r-0 max-md:border-b">
+    <aside
+      className="flex h-screen shrink-0 flex-col overflow-y-auto border-slate-800 border-r bg-slate-950 px-3 py-5 max-md:h-auto max-md:max-h-[45vh] max-md:border-r-0 max-md:border-b"
+      style={{ width }}
+    >
       <div className="mb-8 flex items-center gap-3">
         <div className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 font-extrabold text-white">
           P
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <strong className="block text-slate-100">Proxus Tutor</strong>
           <span className="block text-slate-400 text-sm">Academic assistant</span>
         </div>
+        {onToggleCollapse !== undefined && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            title="Hide sidebar"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-800 hover:text-slate-100"
+          >
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {showAssignments && (
