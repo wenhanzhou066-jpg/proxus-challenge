@@ -1,27 +1,63 @@
 import { useAtomRefresh } from "@effect/atom-react";
 import type { AgentMessage } from "@proxus/shared";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
 import { artifactsQuery } from "../domain/artifacts/atoms.ts";
 import { materialsQuery } from "../domain/materials/atoms.ts";
 import { applyInvalidations, invalidationsForToolCall } from "../domain/tutor/invalidation.ts";
 import { streamTutorMessage } from "../domain/tutor/stream.ts";
+import { clearMessages, loadMessages, saveMessages } from "../domain/assignments/storage.ts";
+import type { Assignment } from "../domain/assignments/types.ts";
+import type { Profile } from "../domain/personality/types.ts";
+import { StudyMenu } from "./StudyMenu.tsx";
 
-const starterPrompts = [
-  "List my uploaded materials",
-  "Create a short quiz from my materials",
-  "Explain the hardest concept in my notes step by step"
-] as const;
+interface ChatProps {
+  readonly profile?: Profile | null;
+  readonly assignments?: ReadonlyArray<Assignment>;
+  readonly currentAssignment?: Assignment | null;
+  readonly onOpenCreateAssignment?: () => void;
+  readonly onResetPreferences?: () => void;
+}
 
-export function Chat() {
-  const [messages, setMessages] = useState<readonly AgentMessage[]>([]);
+export function Chat({
+  profile = null,
+  assignments = [],
+  currentAssignment = null,
+  onOpenCreateAssignment,
+  onResetPreferences
+}: ChatProps) {
+  const assignmentKey = currentAssignment?.id ?? null;
+  const [messages, setMessages] = useState<readonly AgentMessage[]>(() => {
+    if (assignmentKey === null) return [];
+    const stored = loadMessages(assignmentKey);
+    return Array.isArray(stored) ? (stored as AgentMessage[]) : [];
+  });
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | undefined>();
+
+  useEffect(() => {
+    if (assignmentKey === null) {
+      setMessages([]);
+      return;
+    }
+    const stored = loadMessages(assignmentKey);
+    setMessages(Array.isArray(stored) ? (stored as AgentMessage[]) : []);
+  }, [assignmentKey]);
+
+  useEffect(() => {
+    if (assignmentKey === null) return;
+    saveMessages(assignmentKey, messages);
+  }, [assignmentKey, messages]);
   const refreshArtifacts = useAtomRefresh(artifactsQuery);
   const refreshMaterials = useAtomRefresh(materialsQuery);
   const pendingInvalidations = useRef<Array<ReturnType<typeof invalidationsForToolCall>>>([]);
+
+  const scopedInput = (raw: string) =>
+    currentAssignment === null
+      ? raw
+      : `[Assignment: ${currentAssignment.title}${currentAssignment.description.length > 0 ? ` — ${currentAssignment.description}` : ""}]\n\n${raw}`;
 
   const submit = async (nextInput: string) => {
     const trimmed = nextInput.trim();
@@ -35,7 +71,7 @@ export function Chat() {
 
     try {
       for await (const event of streamTutorMessage({
-        input: trimmed,
+        input: scopedInput(trimmed),
         messages,
         maxSteps: 8
       })) {
@@ -69,45 +105,57 @@ export function Chat() {
     }
   };
 
+  const clearChat = () => {
+    setMessages([]);
+    if (assignmentKey !== null) clearMessages(assignmentKey);
+  };
+
   return (
     <main className="grid h-screen max-h-screen min-w-0 grid-rows-[auto_1fr_auto_auto] bg-slate-950 max-md:h-auto max-md:max-h-none">
       <header className="flex items-center justify-between gap-4 border-slate-800 border-b px-6 py-5">
-        <div>
-          <p className="mb-1 font-bold text-sky-400 text-xs uppercase tracking-widest">Ephemeral session</p>
-          <h1 className="m-0 font-bold text-3xl text-slate-100">Academic tutor</h1>
+        <div className="min-w-0">
+          <h1 className="m-0 truncate font-bold text-2xl text-slate-100">
+            {currentAssignment !== null ? currentAssignment.title : "Academic tutor"}
+          </h1>
+          <p className="mt-0.5 text-slate-500 text-sm">
+            {currentAssignment !== null
+              ? currentAssignment.description.length > 0
+                ? currentAssignment.description
+                : "Ephemeral session — chat resets on refresh."
+              : "Ephemeral session — chat resets on refresh."}
+          </p>
         </div>
-        <button
-          className="rounded-full border border-slate-700 px-4 py-2 text-slate-200 hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
-          type="button"
-          onClick={() => setMessages([])}
-          disabled={messages.length === 0}
-        >
-          Clear chat
-        </button>
+        <div className="flex items-center gap-2">
+          {onResetPreferences !== undefined && (
+            <button
+              className="rounded-full border border-slate-700 px-4 py-2 text-slate-200 hover:border-fuchsia-400"
+              type="button"
+              onClick={onResetPreferences}
+              title="Redo the personality quiz and reset your mode"
+            >
+              Preferences
+            </button>
+          )}
+          <button
+            className="rounded-full border border-slate-700 px-4 py-2 text-slate-200 hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+            type="button"
+            onClick={clearChat}
+            disabled={messages.length === 0}
+          >
+            Clear chat
+          </button>
+        </div>
       </header>
 
       <section className="flex flex-col gap-4 overflow-y-auto p-6" aria-live="polite">
         {messages.length === 0
-          ? (
-              <div className="m-auto w-full max-w-3xl text-center">
-                <h2 className="m-0 text-balance font-bold text-4xl text-slate-100 leading-tight md:text-6xl">
-                  Ask about your materials, notes, quizzes, or tests.
-                </h2>
-                <p className="mt-4 text-slate-400">The chat history lives only in browser memory. Refreshing starts over.</p>
-                <div className="mt-6 grid grid-cols-3 gap-3 max-lg:grid-cols-1">
-                  {starterPrompts.map((prompt) => (
-                    <button
-                      className="rounded-2xl border border-slate-700 bg-slate-900 p-4 text-slate-200 hover:border-sky-400"
-                      key={prompt}
-                      type="button"
-                      onClick={() => void submit(prompt)}
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )
+          ? <StudyMenu
+              profile={profile}
+              currentAssignment={currentAssignment}
+              hasAssignments={assignments.length > 0}
+              onPick={(prompt) => void submit(prompt)}
+              {...(onOpenCreateAssignment !== undefined ? { onOpenCreateAssignment } : {})}
+            />
           : messages.map((message, index) => <MessageBubble key={index} message={message} />)}
       </section>
 
@@ -124,11 +172,17 @@ export function Chat() {
           className="w-full resize-y rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-transparent focus:ring-2 focus:ring-sky-400"
           value={input}
           onChange={(event) => setInput(event.currentTarget.value)}
-          placeholder="Ask your tutor something…"
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+              event.preventDefault();
+              void submit(input);
+            }
+          }}
+          placeholder="Ask your tutor something… (Shift+Enter for newline)"
           rows={3}
         />
         <button
-          className="self-end rounded-full border border-slate-700 bg-slate-900 px-5 py-3 text-slate-100 hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50"
+          className="self-end rounded-full bg-sky-500 px-6 py-3 font-bold text-slate-950 text-sm uppercase tracking-wider shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 hover:shadow-sky-400/30 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
           type="submit"
           disabled={isSending || input.trim().length === 0}
         >

@@ -3,6 +3,32 @@
 @source "./**/*.{ts,tsx,html}";
 @source "../node_modules/streamdown/dist/*.js";
 
+@theme {
+  --color-slate-50:  #F0EEE6;
+  --color-slate-100: #E8E6E1;
+  --color-slate-200: #D8D5CC;
+  --color-slate-300: #C4C0B7;
+  --color-slate-400: #A29E96;
+  --color-slate-500: #7A7669;
+  --color-slate-600: #5E5A54;
+  --color-slate-700: #47443F;
+  --color-slate-800: #33322F;
+  --color-slate-900: #262624;
+  --color-slate-950: #1F1E1D;
+
+  --color-sky-50:  #FDECDF;
+  --color-sky-100: #F9D5C1;
+  --color-sky-200: #F3B598;
+  --color-sky-300: #EB9877;
+  --color-sky-400: #E07D5A;
+  --color-sky-500: #C96442;
+  --color-sky-600: #A94F30;
+  --color-sky-700: #883E24;
+  --color-sky-800: #66301C;
+  --color-sky-900: #4A2416;
+  --color-sky-950: #2A1810;
+}
+
 @layer base {
   :root {
     color-scheme: dark;
@@ -10,6 +36,8 @@
 
   body {
     margin: 0;
+    background-color: #1F1E1D;
+    color: #E8E6E1;
   }
 
   button,

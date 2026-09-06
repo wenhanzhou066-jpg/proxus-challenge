@@ -1,19 +1,71 @@
 import { useAtomValue } from "@effect/atom-react";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { artifactsQuery } from "../domain/artifacts/atoms.ts";
 import { materialsQuery } from "../domain/materials/atoms.ts";
+import type { Assignment } from "../domain/assignments/types.ts";
 
 interface SidebarProps {
   readonly selectedArtifactId: string | null;
   readonly onSelectArtifact: (artifactId: string) => void;
+  readonly assignments?: ReadonlyArray<Assignment>;
+  readonly currentAssignmentId?: string | null;
+  readonly onSelectAssignment?: (id: string | null) => void;
+  readonly onOpenCreateAssignment?: () => void;
+  readonly onDeleteAssignment?: (id: string) => void;
+  readonly onRenameAssignment?: (id: string, newTitle: string) => void;
 }
 
-export function Sidebar({ selectedArtifactId, onSelectArtifact }: SidebarProps) {
+export function Sidebar({
+  selectedArtifactId,
+  onSelectArtifact,
+  assignments = [],
+  currentAssignmentId = null,
+  onSelectAssignment,
+  onOpenCreateAssignment,
+  onDeleteAssignment,
+  onRenameAssignment
+}: SidebarProps) {
   const materials = useAtomValue(materialsQuery);
   const artifacts = useAtomValue(artifactsQuery);
+  const showAssignments = onSelectAssignment !== undefined && onOpenCreateAssignment !== undefined;
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const renameRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (renamingId !== null) renameRef.current?.focus();
+  }, [renamingId]);
+
+  useEffect(() => {
+    if (openMenuId === null) return;
+    function close(e: MouseEvent) {
+      if (!(e.target as Element).closest("[data-assignment-menu]")) setOpenMenuId(null);
+    }
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [openMenuId]);
+
+  function startRename(assignment: Assignment) {
+    setOpenMenuId(null);
+    setRenamingId(assignment.id);
+    setRenameValue(assignment.title);
+  }
+
+  function commitRename(id: string) {
+    const trimmed = renameValue.trim();
+    if (trimmed.length > 0 && onRenameAssignment !== undefined) onRenameAssignment(id, trimmed);
+    setRenamingId(null);
+  }
+
+  const deletingAssignment = deletingId !== null ? assignments.find((a) => a.id === deletingId) ?? null : null;
 
   return (
-    <aside className="h-screen overflow-y-auto border-slate-800 border-r bg-slate-950 p-5 max-md:h-auto max-md:max-h-[45vh] max-md:border-r-0 max-md:border-b">
+    <>
+    <aside className="h-screen overflow-y-auto border-slate-800 border-r bg-slate-950 px-3 py-5 max-md:h-auto max-md:max-h-[45vh] max-md:border-r-0 max-md:border-b">
       <div className="mb-8 flex items-center gap-3">
         <div className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 font-extrabold text-white">
           P
@@ -23,6 +75,113 @@ export function Sidebar({ selectedArtifactId, onSelectArtifact }: SidebarProps) 
           <span className="block text-slate-400 text-sm">Academic assistant</span>
         </div>
       </div>
+
+      {showAssignments && (
+        <section className="mb-6 px-2">
+          <h2 className="mb-3 font-semibold text-slate-300 text-sm uppercase tracking-widest">Assignments</h2>
+          <button
+            type="button"
+            onClick={onOpenCreateAssignment}
+            className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 border-dashed px-4 py-2.5 font-medium text-slate-300 text-sm transition hover:border-sky-400 hover:bg-sky-950/30 hover:text-sky-200 focus-visible:border-sky-400 focus-visible:outline-none"
+          >
+            <span className="text-lg leading-none">+</span>
+            <span>New assignment</span>
+          </button>
+          {assignments.length === 0 ? (
+            <p className="text-slate-400 text-sm">Create one to start a chat scoped to a subject.</p>
+          ) : (
+            <ul className="grid gap-0.5">
+              {assignments.map((assignment) => {
+                const active = assignment.id === currentAssignmentId;
+                const menuOpen = openMenuId === assignment.id;
+                const isRenaming = renamingId === assignment.id;
+                return (
+                  <li
+                    key={assignment.id}
+                    className={`group relative flex items-center rounded-xl border transition ${
+                      active
+                        ? "border-sky-500 bg-sky-950/40"
+                        : "border-transparent bg-slate-950/70 hover:border-sky-500 hover:bg-slate-950"
+                    }`}
+                    data-assignment-menu
+                  >
+                    {isRenaming ? (
+                      <form
+                        className="flex flex-1 px-3 py-2.5"
+                        onSubmit={(e) => { e.preventDefault(); commitRename(assignment.id); }}
+                      >
+                        <input
+                          ref={renameRef}
+                          value={renameValue}
+                          onChange={(e) => setRenameValue(e.currentTarget.value)}
+                          onBlur={() => commitRename(assignment.id)}
+                          onKeyDown={(e) => { if (e.key === "Escape") setRenamingId(null); }}
+                          className="min-w-0 flex-1 bg-transparent text-slate-100 text-sm outline-none"
+                        />
+                      </form>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onSelectAssignment(assignment.id)}
+                          className="min-w-0 flex-1 py-2.5 pl-4 text-left"
+                        >
+                          <span className="block truncate text-slate-100 text-sm font-medium">{assignment.title}</span>
+                        </button>
+
+                        <div className="relative shrink-0 pr-1.5" data-assignment-menu>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(menuOpen ? null : assignment.id); }}
+                            className={`flex h-6 w-6 items-center justify-center rounded-full transition focus-visible:outline-none mr-1.5 ${
+                              menuOpen
+                                ? "bg-slate-700 text-slate-100 opacity-100"
+                                : "text-slate-500 opacity-0 group-hover:opacity-100 hover:bg-slate-700 hover:text-slate-100 focus-visible:opacity-100"
+                            }`}
+                            aria-label="Assignment options"
+                            aria-haspopup="true"
+                            aria-expanded={menuOpen}
+                          >
+                            ⋯
+                          </button>
+
+                          {menuOpen && (
+                            <div
+                              className="absolute right-0 top-full z-50 mt-1 min-w-[140px] overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-xl"
+                              data-assignment-menu
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); startRename(assignment); }}
+                                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-slate-200 text-sm transition hover:bg-slate-800"
+                              >
+                                Rename
+                              </button>
+                              {onDeleteAssignment !== undefined && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenMenuId(null);
+                                    setDeletingId(assignment.id);
+                                  }}
+                                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-rose-300 text-sm transition hover:bg-slate-800"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section className="mb-6">
         <div className="mb-3 flex items-center justify-between gap-4">
@@ -90,5 +249,46 @@ export function Sidebar({ selectedArtifactId, onSelectArtifact }: SidebarProps) 
         })}
       </section>
     </aside>
+
+    {deletingAssignment !== null && createPortal(
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        onClick={() => setDeletingId(null)}
+      >
+        <div
+          className="w-full max-w-[320px] rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl text-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 className="font-bold text-slate-100 text-base">Delete assignment?</h2>
+          <p className="mt-2 text-slate-400 text-sm">
+            "<span className="font-semibold text-slate-200">{deletingAssignment.title}</span>"
+          </p>
+          <p className="mt-1 text-rose-400 text-xs font-medium">This action is irreversible.</p>
+          <div className="mt-5 flex justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => setDeletingId(null)}
+              className="rounded-full border border-slate-700 px-4 py-2 text-slate-300 text-sm transition hover:border-slate-500"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (onDeleteAssignment !== undefined) onDeleteAssignment(deletingAssignment.id);
+                setDeletingId(null);
+              }}
+              className="rounded-full bg-rose-600 px-5 py-2 font-bold text-white text-sm ring-2 ring-rose-500/60 shadow-lg shadow-rose-700/40 transition hover:bg-rose-500 hover:ring-rose-400/70"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
   );
 }
