@@ -39,9 +39,10 @@ export const FileMaterialRepository = {
           const stat = yield* fs.stat(fullPath).pipe(
             Effect.mapError(mapError)
           );
+          const base = path.basename(fileName, ".pdf");
           const material: PdfMaterial = {
-            id: path.basename(fileName, ".pdf"),
-            title: path.basename(fileName, ".pdf"),
+            id: slugify(base),
+            title: base,
             fileName,
             pageCount: yield* pdf.pageCount(fullPath).pipe(Effect.mapError(mapError)),
             uploadedAt: Option.getOrElse(stat.mtime, () => new Date(0)).toISOString()
@@ -96,3 +97,14 @@ export const FileMaterialRepository = {
   }),
   layer: (directory: string) => Layer.effect(MaterialRepository)(FileMaterialRepository.make(directory))
 };
+
+/** Filesystem-safe slug: lowercase, ASCII, hyphenated. Preserves uniqueness by hashing collisions. */
+function slugify(input: string): string {
+  return input
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}

@@ -6,6 +6,7 @@ import { HttpApiBuilder, HttpApiScalar } from "effect/unstable/httpapi";
 import { LanguageModel } from "effect/unstable/ai";
 import { ProxusApi, TutorChatRequest, TutorChatStreamEvent } from "@proxus/shared";
 import { GeminiModel } from "../../domain/agents/gemini.ts";
+import { PrecomputeServiceLive } from "../../domain/agents/academic-tutor/precompute.ts";
 import { TutorChatService, TutorChatServiceLive } from "../../domain/agents/academic-tutor/tutor-chat-service.ts";
 import { FileArtifactRepository } from "../../infra/artifacts/file-artifact-repository.ts";
 import { FileMaterialRepository } from "../../infra/materials/file-material-repository.ts";
@@ -51,7 +52,8 @@ const Routes = Layer.mergeAll(ApiRoutes, DocsRoute, TutorStreamRoute);
 
 const DomainLive = Layer.mergeAll(
   TutorChatServiceLive,
-  GeminiModel
+  GeminiModel,
+  PrecomputeServiceLive.pipe(Layer.provide(PopplerPdfService.layer))
 );
 
 const InfraLive = Layer.mergeAll(

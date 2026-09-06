@@ -12,6 +12,9 @@ export const UseUploadedMaterialsSkill = AgentSkill.make({
     "- `materials list`: list uploaded PDF materials and their ids.",
     "- `materials view <materialId> <pages>`: render selected pages as images.",
     "",
+    "Material list output format: `- <id>: <title> (<pages> pages, file: <fileName>)`.",
+    "The `<id>` is the slug BEFORE the colon (lowercase, no spaces, hyphenated). Always pass the slug id — never the human title — to `materials view`.",
+    "",
     "The page selection format supports:",
     "- one page: `10`",
     "- a range: `13-20`",
@@ -19,7 +22,7 @@ export const UseUploadedMaterialsSkill = AgentSkill.make({
     "",
     "Workflow:",
     "1. If you do not know the material id, call `cli({ \"input\": \"materials list\" })`.",
-    "2. When the user asks about a PDF or page range, call `materials view` with the smallest useful page range.",
+    "2. When the user asks about a PDF or page range, call `materials view <slug-id> <pages>` with the smallest useful page range.",
     "3. Treat rendered pages as the source of truth.",
     "4. If the rendered pages do not contain enough evidence, say so clearly.",
     "5. When explaining, cite page numbers from the rendered result."

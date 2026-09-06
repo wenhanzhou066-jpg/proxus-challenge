@@ -1,6 +1,11 @@
 import { Schema } from "effect";
 import { HttpApiEndpoint, HttpApiGroup } from "effect/unstable/httpapi";
-import { MaterialListResponse, PdfMaterial } from "../schemas/material.ts";
+import {
+  MaterialAnalysis,
+  MaterialAnalysisRequest,
+  MaterialListResponse,
+  PdfMaterial
+} from "../schemas/material.ts";
 
 export class MaterialsApi extends HttpApiGroup.make("materials")
   .add(
@@ -12,6 +17,10 @@ export class MaterialsApi extends HttpApiGroup.make("materials")
         id: Schema.String
       },
       success: PdfMaterial
+    }),
+    HttpApiEndpoint.post("precompute", "/precompute", {
+      payload: MaterialAnalysisRequest,
+      success: MaterialAnalysis
     })
   )
   .prefix("/materials")

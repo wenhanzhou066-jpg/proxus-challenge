@@ -1,6 +1,7 @@
 import { Effect, Layer } from "effect";
 import { HttpApiBuilder } from "effect/unstable/httpapi";
 import { ProxusApi } from "@proxus/shared";
+import { PrecomputeService } from "../../domain/agents/academic-tutor/precompute.ts";
 import { TutorChatService } from "../../domain/agents/academic-tutor/tutor-chat-service.ts";
 import { ArtifactRepository, type Artifact } from "../../domain/artifacts/artifact.ts";
 import { MaterialRepository } from "../../domain/materials/material.ts";
@@ -22,13 +23,15 @@ export const MaterialsHttpHandlers = HttpApiBuilder.group(
   "materials",
   Effect.fn(function* (handlers) {
     const materials = yield* MaterialRepository;
+    const precompute = yield* PrecomputeService;
 
     return handlers
       .handle("list", () => materials.list().pipe(
         Effect.map((items) => ({ materials: items })),
         Effect.orDie
       ))
-      .handle("get", ({ params }) => materials.get(params.id).pipe(Effect.orDie));
+      .handle("get", ({ params }) => materials.get(params.id).pipe(Effect.orDie))
+      .handle("precompute", ({ payload }) => precompute.analyze(payload).pipe(Effect.orDie));
   })
 );
 
