@@ -32,16 +32,73 @@
 @layer base {
   :root {
     color-scheme: dark;
+
+    /* Semantic surface tokens (dark theme default) */
+    --surface-0: #1F1E1D;          /* app background */
+    --surface-1: #262624;          /* cards, panels */
+    --surface-2: #33322F;          /* hover, elevated */
+    --surface-3: #47443F;          /* deepest elevated */
+
+    /* Borders */
+    --border-subtle: #33322F;
+    --border-strong: #47443F;
+    --border-accent: #C96442;
+
+    /* Text */
+    --text-primary:   #E8E6E1;
+    --text-secondary: #A29E96;
+    --text-muted:     #7A7669;
+
+    /* Accents */
+    --accent:         #C96442;
+    --accent-hover:   #E07D5A;
+    --accent-soft:    rgba(201, 100, 66, 0.15);
+
+    --danger:         #E11D48;
+    --danger-soft:    rgba(225, 29, 72, 0.15);
+
+    /* Reading-area canvas (PDF viewer, etc.) — warm dark taupe */
+    --pdf-canvas: #2E2B28;
+
+    /* Focus ring — universal */
+    --ring-color: var(--accent);
+
+    /* Standard button sizes */
+    --btn-sm: 1.75rem; /* 28px */
+    --btn-md: 2.25rem; /* 36px */
+    --btn-lg: 2.75rem; /* 44px */
   }
 
   body {
     margin: 0;
-    background-color: #1F1E1D;
-    color: #E8E6E1;
+    background-color: var(--surface-0);
+    color: var(--text-primary);
   }
 
   button,
-  textarea {
+  textarea,
+  input,
+  select {
     font: inherit;
   }
+
+  /* Consistent focus for keyboard users */
+  :focus-visible {
+    outline: 2px solid var(--ring-color);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Respect reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
+
+@utility btn-sm { height: var(--btn-sm); width: var(--btn-sm); }
+@utility btn-md { height: var(--btn-md); width: var(--btn-md); }
+@utility btn-lg { height: var(--btn-lg); width: var(--btn-lg); }

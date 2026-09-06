@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArtifactWorkspace } from "./components/ArtifactWorkspace.tsx";
 import { Chat } from "./components/Chat.tsx";
 import { CreateAssignmentModal } from "./components/CreateAssignmentModal.tsx";
@@ -37,6 +37,50 @@ const PDF_MAX = 800;
 
 const ARTIFACT_WIDTH = 420;
 const CHAT_MIN_WIDTH = 340;
+
+interface AnimatedPdfPanelProps {
+  readonly visible: boolean;
+  readonly width: number;
+  readonly onResize: (x: number) => void;
+  readonly children: React.ReactNode;
+}
+
+function AnimatedPdfPanel({ visible, width, onResize, children }: AnimatedPdfPanelProps) {
+  const [mounted, setMounted] = useState(visible);
+  const [animatingToggle, setAnimatingToggle] = useState(false);
+  const firstRender = useRef(true);
+
+  useEffect(() => {
+    if (firstRender.current) { firstRender.current = false; setMounted(visible); return; }
+    setAnimatingToggle(true);
+    if (visible) setMounted(true);
+    const t = setTimeout(() => {
+      setAnimatingToggle(false);
+      if (!visible) setMounted(false);
+    }, 280);
+    return () => clearTimeout(t);
+  }, [visible]);
+
+  if (!mounted && !visible) return null;
+
+  return (
+    <>
+      {visible && <ResizeHandle onResize={onResize} />}
+      <div
+        className={`flex h-screen shrink-0 overflow-hidden ${visible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+        style={{
+          width: visible ? width : 0,
+          transition: animatingToggle
+            ? "width 280ms cubic-bezier(0.4,0,0.2,1), opacity 220ms ease-out"
+            : "opacity 220ms ease-out"
+        }}
+        aria-hidden={!visible}
+      >
+        {children}
+      </div>
+    </>
+  );
+}
 
 function clamp(value: number, min: number, max: number) {
   if (max < min) return min;
@@ -226,6 +270,7 @@ export function App() {
       onResetPreferences={() => { clearAll(); setProfile(null); setMode(null); }}
       onToggleSidebar={toggleSidebar}
       onOpenMaterialPreview={openMaterialPreview}
+      sidebarCollapsed={sidebarCollapsed}
     />
   );
 
@@ -284,18 +329,20 @@ export function App() {
 
       {chatEl}
 
-      {pdfPanelVisible && selectedMaterialId !== null && (
-        <>
-          <ResizeHandle onResize={(x) => setPdfWidth(clamp(windowWidth - x, PDF_MIN, maxPdfNow))} />
+      <AnimatedPdfPanel
+        visible={pdfPanelVisible && selectedMaterialId !== null}
+        width={pdfWidth}
+        onResize={(x) => setPdfWidth(clamp(windowWidth - x, PDF_MIN, maxPdfNow))}
+      >
+        {selectedMaterialId !== null && (
           <PdfPanel
             materials={currentMaterials}
             selectedId={selectedMaterialId}
             onSelectId={setSelectedMaterialId}
             onClose={() => setSelectedMaterialId(null)}
-            style={{ width: pdfWidth }}
           />
-        </>
-      )}
+        )}
+      </AnimatedPdfPanel>
 
       {modals}
     </div>

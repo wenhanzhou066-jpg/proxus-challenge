@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Columns, Download, FileText, Minus, Plus, RotateCcw, RotateCw, X } from "lucide-react";
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -15,13 +16,14 @@ interface PdfPanelProps {
   readonly onSelectId: (id: string) => void;
   readonly onClose: () => void;
   readonly style?: CSSProperties;
+  readonly className?: string;
 }
 
 const ZOOM_STEPS = [0.6, 0.75, 1, 1.25, 1.5] as const;
 const ZOOM_DEFAULT_INDEX = 2;
 const COMPACT_WIDTH = 380; // hide zoom controls below this panel width
 
-export function PdfPanel({ materials, selectedId, onSelectId, onClose, style }: PdfPanelProps) {
+export function PdfPanel({ materials, selectedId, onSelectId, onClose, style, className = "" }: PdfPanelProps) {
   const selected = materials.find((m) => m.id === selectedId) ?? materials[0];
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -40,18 +42,22 @@ export function PdfPanel({ materials, selectedId, onSelectId, onClose, style }: 
     [selected?.id]
   );
 
-  // Track panel + canvas widths for responsive rendering
+  // Track panel + canvas widths for responsive rendering (rAF-throttled to avoid layout thrash while dragging)
   useEffect(() => {
     const aside = asideRef.current;
     const canvas = canvasRef.current;
     if (aside === null || canvas === null) return;
+    let raf = 0;
     const obs = new ResizeObserver(() => {
-      setPanelWidth(aside.clientWidth);
-      setCanvasWidth(canvas.clientWidth);
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        setPanelWidth(aside.clientWidth);
+        setCanvasWidth(canvas.clientWidth);
+      });
     });
     obs.observe(aside);
     obs.observe(canvas);
-    return () => obs.disconnect();
+    return () => { obs.disconnect(); cancelAnimationFrame(raf); };
   }, []);
 
   // Reset on material change
@@ -84,7 +90,22 @@ export function PdfPanel({ materials, selectedId, onSelectId, onClose, style }: 
   if (selected === undefined) return null;
 
   const scale = ZOOM_STEPS[zoomIndex] ?? 1;
-  const pageWidth = Math.max(160, canvasWidth - 32) * scale;
+  // Debounce the width we hand to react-pdf so react-pdf only re-rasters
+  // once the drag settles, then keep the CSS transform in sync with the *actually
+  // rendered* width — never with the requested one. This avoids the blink where
+  // the wrapper snaps back to scale=1 before the new canvas is on screen.
+  const [debouncedCanvasWidth, setDebouncedCanvasWidth] = useState(canvasWidth);
+  const deferredCanvasWidth = useDeferredValue(debouncedCanvasWidth);
+  const [renderedCanvasWidth, setRenderedCanvasWidth] = useState(canvasWidth);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedCanvasWidth(canvasWidth), 120);
+    return () => clearTimeout(t);
+  }, [canvasWidth]);
+  const pageWidth = Math.max(160, deferredCanvasWidth - 32) * scale;
+  const visualScale = renderedCanvasWidth > 0 ? canvasWidth / renderedCanvasWidth : 1;
+  // Skip text + annotation layers while the user is actively resizing so the
+  // canvas re-render is faster and the layer redraw doesn't add its own flash.
+  const isResizing = Math.abs(canvasWidth - renderedCanvasWidth) > 1;
   const canPrev = currentPage > 1;
   const canNext = numPages > 0 && currentPage < numPages;
   const showZoomControls = panelWidth >= COMPACT_WIDTH;
@@ -92,8 +113,8 @@ export function PdfPanel({ materials, selectedId, onSelectId, onClose, style }: 
   return (
     <aside
       ref={asideRef}
-      className="relative flex min-w-0 shrink-0 flex-col overflow-hidden border-slate-800 border-l bg-slate-950"
-      style={{ height: "100vh", ...style }}
+      className={`relative flex h-full min-w-0 flex-1 flex-col overflow-hidden border-slate-800 border-l bg-slate-950 ${className}`}
+      style={style}
     >
       {/* Tabs (multi-material) */}
       {materials.length > 1 && (
@@ -117,95 +138,97 @@ export function PdfPanel({ materials, selectedId, onSelectId, onClose, style }: 
       )}
 
       {/* Toolbar */}
-      <div className="flex shrink-0 items-center gap-1 border-slate-800 border-b bg-slate-900 px-2 py-1.5">
-        <IconButton onClick={onClose} title="Close">
-          <path fillRule="evenodd" clipRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" />
-        </IconButton>
+      <div className="flex shrink-0 items-center gap-3 border-slate-800 border-b bg-slate-900 px-3 py-2">
+        <button
+          type="button"
+          onClick={onClose}
+          title="Cerrar"
+          aria-label="Cerrar"
+          className="grid size-7 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
+        >
+          <X size={14} />
+        </button>
 
-        <svg className="size-3.5 shrink-0 text-red-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-          <path fillRule="evenodd" clipRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" />
-        </svg>
-        <span className="min-w-0 flex-1 truncate text-slate-400 text-xs">{selected.name}</span>
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          <FileText size={14} className="shrink-0 text-rose-400" aria-hidden />
+          <span className="min-w-0 truncate text-slate-300 text-xs">{selected.name}</span>
+        </div>
 
         {numPages > 0 && viewMode === "single" && (
-          <div className="flex shrink-0 items-center gap-0.5">
-            <SmallIconButton onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={!canPrev} title="Previous page">
-              <path fillRule="evenodd" clipRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" />
-            </SmallIconButton>
-            <span className="min-w-[44px] text-center text-slate-400 text-xs tabular-nums">
+          <div className="flex h-7 shrink-0 items-center gap-0.5 rounded-full border border-slate-800 bg-slate-950 px-1">
+            <ToolbarBtn onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={!canPrev} title="Página anterior">
+              <ChevronLeft size={14} />
+            </ToolbarBtn>
+            <span className="min-w-[52px] px-1 text-center text-slate-300 text-xs tabular-nums">
               {currentPage} / {numPages}
             </span>
-            <SmallIconButton onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))} disabled={!canNext} title="Next page">
-              <path fillRule="evenodd" clipRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" />
-            </SmallIconButton>
+            <ToolbarBtn onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))} disabled={!canNext} title="Página siguiente">
+              <ChevronRight size={14} />
+            </ToolbarBtn>
           </div>
         )}
 
         {numPages > 0 && viewMode === "continuous" && (
-          <span className="shrink-0 text-slate-400 text-xs tabular-nums">{numPages} pages</span>
+          <span className="shrink-0 text-slate-400 text-xs tabular-nums">{numPages} páginas</span>
         )}
 
         <button
           type="button"
           onClick={() => setViewMode((v) => (v === "single" ? "continuous" : "single"))}
-          title={viewMode === "single" ? "Scroll all pages" : "Single page view"}
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition ${
+          title={viewMode === "single" ? "Ver todas las páginas" : "Ver una sola página"}
+          className={`grid size-7 shrink-0 place-items-center rounded-full transition ${
             viewMode === "continuous"
-              ? "bg-sky-500/15 text-sky-400 hover:bg-sky-500/25"
-              : "text-slate-500 hover:bg-slate-800 hover:text-slate-100"
+              ? "bg-sky-500/15 text-sky-300 hover:bg-sky-500/25"
+              : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
           }`}
         >
-          <svg className="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-            <rect x="5" y="2.5" width="10" height="4" rx="0.5" />
-            <rect x="5" y="8" width="10" height="4" rx="0.5" />
-            <rect x="5" y="13.5" width="10" height="4" rx="0.5" />
-          </svg>
+          <Columns size={14} />
         </button>
 
-
         {showZoomControls && (
-          <div className="flex shrink-0 items-center gap-0.5 rounded-md border border-slate-800 bg-slate-950 p-0.5">
-            <SmallIconButton onClick={() => setZoomIndex((i) => Math.max(0, i - 1))} disabled={zoomIndex === 0} title="Zoom out">
-              <path fillRule="evenodd" clipRule="evenodd" d="M5 10a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z" />
-            </SmallIconButton>
-            <span className="min-w-[32px] text-center text-slate-400 text-xs tabular-nums">
+          <div className="flex h-7 shrink-0 items-center gap-0.5 rounded-full border border-slate-800 bg-slate-950 px-1">
+            <ToolbarBtn onClick={() => setZoomIndex((i) => Math.max(0, i - 1))} disabled={zoomIndex === 0} title="Alejar">
+              <Minus size={14} />
+            </ToolbarBtn>
+            <span className="min-w-[40px] px-1 text-center text-slate-300 text-xs tabular-nums">
               {Math.round(scale * 100)}%
             </span>
-            <SmallIconButton onClick={() => setZoomIndex((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))} disabled={zoomIndex === ZOOM_STEPS.length - 1} title="Zoom in">
-              <path fillRule="evenodd" clipRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-            </SmallIconButton>
+            <ToolbarBtn onClick={() => setZoomIndex((i) => Math.min(ZOOM_STEPS.length - 1, i + 1))} disabled={zoomIndex === ZOOM_STEPS.length - 1} title="Acercar">
+              <Plus size={14} />
+            </ToolbarBtn>
           </div>
         )}
 
-        <button
-          type="button"
-          onClick={() => setRotation((r) => ((r + 90) % 360) as 0 | 90 | 180 | 270)}
-          title="Rotate 90°"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-800 hover:text-slate-100"
-        >
-          <svg className="size-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.8} aria-hidden>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 4v4h-4M15 8a6 6 0 10-1.8 4.3" />
-          </svg>
-        </button>
+        <div className="flex h-7 shrink-0 items-center gap-0.5 rounded-full border border-slate-800 bg-slate-950 px-1">
+          <ToolbarBtn onClick={() => setRotation((r) => ((r + 270) % 360) as 0 | 90 | 180 | 270)} title="Rotar −90°">
+            <RotateCcw size={14} />
+          </ToolbarBtn>
+          <ToolbarBtn onClick={() => setRotation((r) => ((r + 90) % 360) as 0 | 90 | 180 | 270)} title="Rotar +90°">
+            <RotateCw size={14} />
+          </ToolbarBtn>
+        </div>
 
         <a
           href={selected.dataUrl}
           download={selected.name}
-          title="Download"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-800 hover:text-slate-100"
+          title="Descargar"
+          aria-label="Descargar PDF"
+          className="grid size-7 shrink-0 place-items-center rounded-full text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
         >
-          <svg className="size-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
-            <path fillRule="evenodd" clipRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" />
-          </svg>
+          <Download size={14} />
         </a>
       </div>
 
       {/* Page canvas — scrolls independently */}
       <div
         ref={canvasRef}
-        className="flex min-h-0 flex-1 justify-center overflow-auto bg-neutral-700 p-4"
+        className="flex min-h-0 flex-1 justify-center overflow-auto p-4"
+        style={{ backgroundColor: "var(--pdf-canvas)" }}
       >
-        <div className={viewMode === "single" ? "my-auto flex-shrink-0" : "flex flex-shrink-0 flex-col gap-4"}>
+        <div
+          className={viewMode === "single" ? "my-auto flex-shrink-0" : "flex flex-shrink-0 flex-col gap-4"}
+          style={{ transform: `scale(${visualScale})`, transformOrigin: "top center", willChange: "transform" }}
+        >
           <Document
             key={selected.id}
             file={fileProp}
@@ -228,8 +251,10 @@ export function PdfPanel({ materials, selectedId, onSelectId, onClose, style }: 
                 pageNumber={currentPage}
                 width={pageWidth}
                 rotate={rotation}
-                renderAnnotationLayer
-                renderTextLayer
+                renderAnnotationLayer={!isResizing}
+                renderTextLayer={!isResizing}
+                canvasBackground="#2E2B28"
+                onRenderSuccess={() => setRenderedCanvasWidth(deferredCanvasWidth)}
                 className="shadow-2xl"
               />
             )}
@@ -241,8 +266,10 @@ export function PdfPanel({ materials, selectedId, onSelectId, onClose, style }: 
                     pageNumber={i + 1}
                     width={pageWidth}
                     rotate={rotation}
-                    renderAnnotationLayer
-                    renderTextLayer
+                    renderAnnotationLayer={!isResizing}
+                    renderTextLayer={!isResizing}
+                    canvasBackground="#2E2B28"
+                    {...(i === 0 ? { onRenderSuccess: () => setRenderedCanvasWidth(deferredCanvasWidth) } : {})}
                     className="shadow-2xl"
                   />
                 ))}
@@ -283,30 +310,27 @@ export function PdfPanel({ materials, selectedId, onSelectId, onClose, style }: 
   );
 }
 
-// ── Toolbar helpers ──
-function IconButton({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-800 hover:text-slate-100"
-    >
-      <svg className="size-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden>{children}</svg>
-    </button>
-  );
-}
-
-function SmallIconButton({ onClick, disabled, title, children }: { onClick: () => void; disabled?: boolean; title: string; children: React.ReactNode }) {
+function ToolbarBtn({
+  onClick,
+  disabled,
+  title,
+  children
+}: {
+  readonly onClick: () => void;
+  readonly disabled?: boolean;
+  readonly title: string;
+  readonly children: React.ReactNode;
+}) {
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className="flex h-5 w-5 items-center justify-center rounded text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 disabled:pointer-events-none disabled:opacity-30"
+      aria-label={title}
+      className="grid size-6 place-items-center rounded-full text-slate-400 transition hover:bg-slate-800 hover:text-slate-100 disabled:pointer-events-none disabled:opacity-30"
     >
-      <svg className="size-3" viewBox="0 0 20 20" fill="currentColor" aria-hidden>{children}</svg>
+      {children}
     </button>
   );
 }

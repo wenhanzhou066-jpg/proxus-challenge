@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { readFileAsMaterial } from "../domain/assignments/storage.ts";
 import type { Material } from "../domain/assignments/types.ts";
@@ -83,10 +84,10 @@ export function CreateAssignmentModal({ onClose, onCreate }: Props) {
       onClick={onClose}
     >
       <div
-        className="mx-auto w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl"
+        className="mx-auto flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="flex items-start justify-between gap-4 border-slate-800 border-b px-6 py-5">
+        <header className="flex shrink-0 items-start justify-between gap-4 border-slate-800 border-b px-6 py-5">
           <div>
             <h2 id="create-assignment-title" className="m-0 font-bold text-slate-100 text-xl">
               New assignment
@@ -98,20 +99,21 @@ export function CreateAssignmentModal({ onClose, onCreate }: Props) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-800 hover:text-slate-100"
-            aria-label="Close"
+            className="grid size-8 shrink-0 place-items-center rounded-full border border-slate-700 text-slate-400 transition hover:border-slate-500 hover:text-slate-100"
+            aria-label="Cerrar"
           >
-            ×
+            <X size={16} strokeWidth={2} aria-hidden />
           </button>
         </header>
 
         <form
-          className="grid gap-4 px-6 py-5"
+          className="flex min-h-0 flex-1 flex-col"
           onSubmit={(event) => {
             event.preventDefault();
             submit();
           }}
         >
+        <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-6 py-5">
           <label className="grid gap-1.5">
             <span className="font-semibold text-slate-300 text-sm">Title</span>
             <input
@@ -189,22 +191,23 @@ export function CreateAssignmentModal({ onClose, onCreate }: Props) {
                     key={material.id}
                     className="grid gap-2 rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2"
                   >
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
                         onClick={() => setPreview(material)}
                         className="min-w-0 flex-1 text-left"
                       >
                         <p className="truncate text-slate-100 text-sm underline-offset-2 hover:underline">{material.name}</p>
-                        <p className="text-slate-500 text-xs">{formatSize(material.sizeBytes)} · Preview</p>
+                        <p className="text-slate-500 text-xs">{formatSize(material.sizeBytes)} · Vista previa</p>
                       </button>
                       <button
                         type="button"
                         onClick={() => removeMaterial(material.id)}
-                        className="rounded-full px-2 text-slate-500 hover:text-rose-300"
-                        aria-label={`Remove ${material.name}`}
+                        title="Quitar"
+                        className="grid size-7 shrink-0 place-items-center rounded-full border border-slate-700 text-slate-400 transition hover:border-rose-400 hover:bg-rose-500/15 hover:text-rose-300"
+                        aria-label={`Quitar ${material.name}`}
                       >
-                        Remove
+                        <X size={14} strokeWidth={2} aria-hidden />
                       </button>
                     </div>
                     <input
@@ -232,8 +235,9 @@ export function CreateAssignmentModal({ onClose, onCreate }: Props) {
           </div>
 
           {error !== null && <p className="m-0 text-rose-300 text-sm">{error}</p>}
+        </div>
 
-          <div className="flex items-center justify-end gap-2 border-slate-800 border-t pt-4">
+          <div className="flex shrink-0 items-center justify-end gap-2 border-slate-800 border-t bg-slate-900 px-6 py-4">
             <button
               type="button"
               onClick={onClose}

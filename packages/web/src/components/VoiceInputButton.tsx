@@ -1,3 +1,4 @@
+import { Mic, MicOff } from "lucide-react";
 import { useSpeechRecognition } from "../lib/useSpeechRecognition.ts";
 
 interface Props {
@@ -29,8 +30,9 @@ export function VoiceInputButton({
 
   if (!supported) return null;
 
-  const dim = size === "sm" ? "h-7 w-7" : "h-9 w-9";
-  const iconDim = size === "sm" ? "size-4" : "size-5";
+  const dim = size === "sm" ? "size-7" : "size-9";
+  const iconSize = size === "sm" ? 14 : 18;
+  const Icon = listening ? MicOff : Mic;
 
   return (
     <button
@@ -39,16 +41,13 @@ export function VoiceInputButton({
       title={error !== null ? `Error: ${error}` : listening ? "Detener dictado" : title}
       aria-label={listening ? "Detener dictado por voz" : "Iniciar dictado por voz"}
       aria-pressed={listening}
-      className={`${dim} flex shrink-0 items-center justify-center rounded-full border transition ${
+      className={`${dim} grid shrink-0 place-items-center rounded-full border transition ${
         listening
-          ? "animate-pulse border-red-400 bg-red-500/20 text-red-300"
+          ? "animate-pulse border-rose-400 bg-rose-500/20 text-rose-300"
           : "border-slate-700 bg-slate-900 text-slate-400 hover:border-sky-400 hover:text-sky-300"
       }`}
     >
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className={iconDim} aria-hidden>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z" />
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 11a7 7 0 0 0 14 0M12 18v3" />
-      </svg>
+      <Icon size={iconSize} strokeWidth={1.8} aria-hidden />
     </button>
   );
 }

@@ -12,6 +12,9 @@ import type { Assignment, Material } from "../domain/assignments/types.ts";
 import { getStrategy } from "../domain/personality/strategy.ts";
 import type { Profile } from "../domain/personality/types.ts";
 import { loadAnalysis } from "../domain/precompute/storage.ts";
+import { Files, Loader2, Send } from "lucide-react";
+import { MaterialsLibrary } from "./MaterialsLibrary.tsx";
+import { SpeakButton } from "./SpeakButton.tsx";
 import { StudyMenu } from "./StudyMenu.tsx";
 import { StudySession } from "./StudySession.tsx";
 import { VoiceInputButton } from "./VoiceInputButton.tsx";
@@ -24,6 +27,7 @@ interface ChatProps {
   readonly onResetPreferences?: () => void;
   readonly onToggleSidebar?: () => void;
   readonly onOpenMaterialPreview?: (materialId: string) => void;
+  readonly sidebarCollapsed?: boolean;
 }
 
 function appendTranscript(prev: string, chunk: string): string {
@@ -40,7 +44,8 @@ export function Chat({
   onOpenCreateAssignment,
   onResetPreferences,
   onToggleSidebar,
-  onOpenMaterialPreview
+  onOpenMaterialPreview,
+  sidebarCollapsed = false
 }: ChatProps) {
   const assignmentKey = currentAssignment?.id ?? null;
   const [messages, setMessages] = useState<readonly AgentMessage[]>(() => {
@@ -55,6 +60,15 @@ export function Chat({
     material: Material;
     questions: ReadonlyArray<ConceptualQuestion>;
   } | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (el === null) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }, [input]);
 
   const strategy = useMemo(() => getStrategy(profile), [profile]);
 
@@ -151,38 +165,56 @@ export function Chat({
 
   return (
     <main className="grid h-screen max-h-screen min-w-0 flex-1 grid-rows-[auto_1fr_auto_auto] bg-slate-950 max-md:h-auto max-md:max-h-none">
-      <header className="flex items-center justify-between gap-4 border-slate-800 border-b px-4 py-5">
+      <header
+        className="flex items-center justify-between gap-6 border-slate-800 border-b py-4 pr-6 transition-[padding-left] duration-200"
+        style={{ paddingLeft: sidebarCollapsed ? 80 : 24 }}
+      >
         <div className="min-w-0 flex-1">
-          <h1 className="m-0 truncate font-bold text-2xl text-slate-100">
+          <h1 className="m-0 truncate font-bold text-xl text-slate-100">
             {currentAssignment !== null ? currentAssignment.title : "Academic tutor"}
           </h1>
-          <p className="mt-0.5 text-slate-500 text-sm">
+          <p className="mt-1 truncate text-slate-500 text-xs">
             {currentAssignment !== null
               ? currentAssignment.description.length > 0
                 ? currentAssignment.description
-                : "Ephemeral session — chat resets on refresh."
-              : "Ephemeral session — chat resets on refresh."}
+                : "Sesión efímera — el chat se reinicia al recargar."
+              : "Sesión efímera — el chat se reinicia al recargar."}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1.5">
+          {currentAssignment !== null && currentAssignment.materials.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setLibraryOpen(true)}
+              title="Ver PDFs del assignment"
+              aria-label="Ver PDFs del assignment"
+              className="inline-flex h-9 items-center gap-2 rounded-full border border-slate-700 pl-3 pr-2 text-slate-200 text-sm transition hover:border-sky-400 hover:bg-sky-500/10 hover:text-sky-200"
+            >
+              <Files size={16} strokeWidth={1.8} aria-hidden />
+              <span className="hidden sm:inline">Materiales</span>
+              <span className="grid h-5 min-w-5 place-items-center rounded-full bg-slate-800 px-1.5 font-mono text-[10px] text-slate-300 tabular-nums">
+                {currentAssignment.materials.length}
+              </span>
+            </button>
+          )}
           {onResetPreferences !== undefined && (
             <button
-              className="hidden rounded-full border border-slate-700 px-4 py-2 text-slate-200 text-sm transition hover:border-fuchsia-400 sm:inline-block"
+              className="hidden h-9 items-center rounded-full border border-slate-700 px-4 text-slate-200 text-sm transition hover:border-sky-400 hover:bg-sky-500/10 hover:text-sky-200 sm:inline-flex"
               type="button"
               onClick={onResetPreferences}
-              title="Redo the personality quiz and reset your mode"
+              title="Rehacer el test de personalidad"
             >
-              Preferences
+              Preferencias
             </button>
           )}
           <button
-            className="rounded-full border border-slate-700 px-3 py-1.5 text-slate-200 text-sm transition hover:border-sky-400 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2"
+            className="inline-flex h-9 items-center rounded-full border border-slate-700 px-4 text-slate-200 text-sm transition hover:border-sky-400 hover:bg-sky-500/10 hover:text-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
             onClick={clearChat}
             disabled={messages.length === 0}
-            title="Clear chat"
+            title="Limpiar chat"
           >
-            Clear
+            Limpiar
           </button>
         </div>
       </header>
@@ -221,15 +253,16 @@ export function Chat({
       {error === undefined ? null : <p className="m-0 px-6 pb-3 text-red-200">{error}</p>}
 
       <form
-        className="grid grid-cols-[1fr_auto] gap-3 border-slate-800 border-t bg-slate-950/90 px-6 pt-4 pb-6"
+        className="mx-auto w-full max-w-3xl border-slate-800 bg-slate-950/90 px-4 pt-3 pb-5"
         onSubmit={(event) => {
           event.preventDefault();
           void submit(input);
         }}
       >
-        <div className="relative">
+        <div className="relative flex items-end gap-2 rounded-2xl border border-slate-700 bg-slate-900 px-3 py-2 shadow-lg focus-within:border-transparent focus-within:ring-2 focus-within:ring-sky-400">
           <textarea
-            className="w-full resize-y rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 pr-14 text-slate-100 outline-none focus:border-transparent focus:ring-2 focus:ring-sky-400"
+            ref={textareaRef}
+            className="max-h-[200px] min-h-[24px] flex-1 resize-none bg-transparent py-1.5 text-slate-100 outline-none placeholder:text-slate-500"
             value={input}
             onChange={(event) => setInput(event.currentTarget.value)}
             onKeyDown={(event) => {
@@ -238,23 +271,35 @@ export function Chat({
                 void submit(input);
               }
             }}
-            placeholder="Pregunta a tu tutor… (Shift+Enter salto de línea, mic para dictar)"
-            rows={3}
+            placeholder="Pregunta a tu tutor…"
+            rows={1}
           />
-          <div className="absolute right-2 bottom-2">
-            <VoiceInputButton
-              onFinalTranscript={(text) => setInput((prev) => appendTranscript(prev, text))}
-            />
-          </div>
+          <VoiceInputButton
+            onFinalTranscript={(text) => setInput((prev) => appendTranscript(prev, text))}
+          />
+          <button
+            type="submit"
+            disabled={isSending || input.trim().length === 0}
+            title="Enviar (Enter)"
+            aria-label="Enviar"
+            className="grid size-9 shrink-0 place-items-center rounded-full bg-sky-500 text-slate-950 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
+          >
+            {isSending
+              ? <Loader2 size={18} strokeWidth={2.4} className="animate-spin" aria-hidden />
+              : <Send size={18} strokeWidth={2} aria-hidden />}
+          </button>
         </div>
-        <button
-          className="self-end rounded-full bg-sky-500 px-6 py-3 font-bold text-slate-950 text-sm uppercase tracking-wider shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 hover:shadow-sky-400/30 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
-          type="submit"
-          disabled={isSending || input.trim().length === 0}
-        >
-          {isSending ? "Thinking…" : "Send"}
-        </button>
+        <p className="mt-1.5 text-center text-slate-500 text-xs">Enter para enviar · Shift+Enter salto de línea</p>
       </form>
+
+      {libraryOpen && currentAssignment !== null && (
+        <MaterialsLibrary
+          assignmentTitle={currentAssignment.title}
+          materials={currentAssignment.materials}
+          onOpen={(id) => onOpenMaterialPreview?.(id)}
+          onClose={() => setLibraryOpen(false)}
+        />
+      )}
     </main>
   );
 }
@@ -273,14 +318,20 @@ function MessageBubble({ message }: { readonly message: AgentMessage }) {
     );
   }
 
+  const isAssistant = message.role === "assistant";
   return (
     <article className={message.role === "user"
       ? "max-w-3xl self-end rounded-2xl border border-blue-700 bg-blue-950 p-4"
       : "max-w-3xl self-start rounded-2xl border border-slate-800 bg-slate-900 p-4"}
     >
-      <span className="mb-2 block font-bold text-sky-400 text-xs uppercase tracking-wide">
-        {message.role === "user" ? "You" : "Tutor"}
-      </span>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <span className="block font-bold text-sky-400 text-xs uppercase tracking-wide">
+          {message.role === "user" ? "You" : "Tutor"}
+        </span>
+        {isAssistant && message.content.trim().length > 0 && (
+          <SpeakButton text={message.content} />
+        )}
+      </div>
       <div className="text-slate-100 leading-7">
         <Streamdown>{message.content}</Streamdown>
       </div>

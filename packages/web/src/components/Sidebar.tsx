@@ -1,5 +1,6 @@
 import { useAtomValue } from "@effect/atom-react";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
+import { CheckCircle2, MoreHorizontal, PanelLeft, Plus, Settings, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { artifactsQuery } from "../domain/artifacts/atoms.ts";
@@ -56,6 +57,14 @@ export function Sidebar({
     .toUpperCase() || "?";
   const showAssignments = onSelectAssignment !== undefined && onOpenCreateAssignment !== undefined;
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const toggleSelected = (id: string) => setSelectedIds((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -116,26 +125,65 @@ export function Sidebar({
             type="button"
             onClick={onToggleCollapse}
             title="Hide sidebar"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-800 hover:text-slate-100"
+            className="grid size-8 shrink-0 place-items-center rounded-full border border-slate-700 text-slate-400 transition hover:border-sky-400 hover:bg-sky-500/15 hover:text-sky-300"
           >
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <PanelLeft size={18} aria-hidden />
           </button>
         )}
       </div>
 
       {showAssignments && (
         <section className="mb-6 px-2">
-          <h2 className="mb-3 font-semibold text-slate-300 text-sm uppercase tracking-widest">Assignments</h2>
-          <button
-            type="button"
-            onClick={onOpenCreateAssignment}
-            className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-700 border-dashed px-4 py-2.5 font-medium text-slate-300 text-sm transition hover:border-sky-400 hover:bg-sky-950/30 hover:text-sky-200 focus-visible:border-sky-400 focus-visible:outline-none"
-          >
-            <span className="text-lg leading-none">+</span>
-            <span>New assignment</span>
-          </button>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="font-semibold text-slate-300 text-sm uppercase tracking-widest">Assignments</h2>
+            {selectionMode ? (
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => { setSelectionMode(false); setSelectedIds(new Set()); }}
+                  title="Salir de selección"
+                  aria-label="Salir de selección"
+                  className="inline-flex h-7 items-center gap-1 rounded-md border border-sky-500/60 bg-sky-500/15 px-1.5 text-sky-200 text-xs transition hover:bg-sky-500/25"
+                >
+                  <CheckCircle2 size={14} strokeWidth={2.4} aria-hidden />
+                  <span className="font-mono tabular-nums">{selectedIds.size}</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedIds.size === 0}
+                  onClick={() => setBulkDeleteOpen(true)}
+                  title="Borrar seleccionadas"
+                  aria-label="Borrar seleccionadas"
+                  className="grid size-7 shrink-0 place-items-center rounded-full border border-slate-700 text-slate-400 transition hover:border-rose-400 hover:bg-rose-500/15 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-slate-700 disabled:hover:bg-transparent disabled:hover:text-slate-400"
+                >
+                  <X size={14} strokeWidth={2} aria-hidden />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                {assignments.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectionMode(true)}
+                    title="Seleccionar varias"
+                    aria-label="Seleccionar varias"
+                    className="grid size-7 shrink-0 place-items-center rounded-full border border-slate-700 text-slate-300 transition hover:border-sky-400 hover:bg-sky-500/15 hover:text-sky-300 focus-visible:border-sky-400 focus-visible:outline-none"
+                  >
+                    <CheckCircle2 size={14} strokeWidth={1.8} aria-hidden />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onOpenCreateAssignment}
+                  title="Nueva asignatura"
+                  aria-label="Nueva asignatura"
+                  className="grid size-7 shrink-0 place-items-center rounded-full border border-slate-700 text-slate-300 transition hover:border-sky-400 hover:bg-sky-500/15 hover:text-sky-300 focus-visible:border-sky-400 focus-visible:outline-none"
+                >
+                  <Plus size={16} strokeWidth={2.2} aria-hidden />
+                </button>
+              </div>
+            )}
+          </div>
           {assignments.length === 0 ? (
             <p className="text-slate-400 text-sm">Create one to start a chat scoped to a subject.</p>
           ) : (
@@ -168,6 +216,16 @@ export function Sidebar({
                           className="min-w-0 flex-1 bg-transparent text-slate-100 text-sm outline-none"
                         />
                       </form>
+                    ) : selectionMode ? (
+                      <label className="flex flex-1 cursor-pointer items-center gap-3 py-2.5 pl-4 pr-3">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(assignment.id)}
+                          onChange={() => toggleSelected(assignment.id)}
+                          className="size-4 shrink-0 accent-sky-500"
+                        />
+                        <span className="min-w-0 flex-1 truncate text-slate-100 text-sm font-medium">{assignment.title}</span>
+                      </label>
                     ) : (
                       <>
                         <button
@@ -191,7 +249,7 @@ export function Sidebar({
                             aria-haspopup="true"
                             aria-expanded={menuOpen}
                           >
-                            ⋯
+                            <MoreHorizontal size={14} aria-hidden />
                           </button>
 
                           {menuOpen && (
@@ -315,10 +373,7 @@ export function Sidebar({
           <span className="block text-slate-400 text-xs transition group-hover:text-slate-300">Perfil · Accesibilidad</span>
         </div>
         <span className="grid size-8 shrink-0 place-items-center rounded-full bg-slate-900 text-slate-500 ring-1 ring-slate-800 transition group-hover:rotate-90 group-hover:bg-sky-500/15 group-hover:text-sky-300 group-hover:ring-sky-400/60">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="size-4" aria-hidden>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065Z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-          </svg>
+          <Settings size={16} strokeWidth={1.8} aria-hidden />
         </span>
       </button>
     )}
@@ -330,15 +385,13 @@ export function Sidebar({
         onClick={onToggleCollapse}
         title="Mostrar barra lateral"
         aria-label="Mostrar barra lateral"
-        className={`fixed top-4 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/90 text-slate-300 shadow-lg backdrop-blur transition-all duration-200 hover:border-sky-400 hover:bg-slate-800 hover:text-sky-300 ${
+        className={`fixed top-4 left-4 z-40 grid size-10 place-items-center rounded-full border border-slate-700 bg-slate-900/90 text-slate-300 shadow-lg backdrop-blur transition-all duration-200 hover:border-sky-400 hover:bg-sky-500/15 hover:text-sky-300 ${
           collapsed
             ? "pointer-events-auto scale-100 opacity-100 delay-150"
             : "pointer-events-none -translate-x-3 scale-90 opacity-0"
         }`}
       >
-        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
+        <PanelLeft size={18} aria-hidden />
       </button>
     )}
 
@@ -375,6 +428,46 @@ export function Sidebar({
               className="rounded-full bg-rose-600 px-5 py-2 font-bold text-white text-sm ring-2 ring-rose-500/60 shadow-lg shadow-rose-700/40 transition hover:bg-rose-500 hover:ring-rose-400/70"
             >
               Delete
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
+
+    {bulkDeleteOpen && createPortal(
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        onClick={() => setBulkDeleteOpen(false)}
+      >
+        <div
+          className="w-full max-w-[340px] rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl text-center"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <h2 className="font-bold text-slate-100 text-base">
+            ¿Borrar {selectedIds.size} asignatura{selectedIds.size === 1 ? "" : "s"}?
+          </h2>
+          <p className="mt-2 text-slate-400 text-sm">Se eliminarán todos sus chats y materiales asociados.</p>
+          <p className="mt-1 text-rose-400 text-xs font-medium">Esta acción es irreversible.</p>
+          <div className="mt-5 flex justify-center gap-2">
+            <button type="button" onClick={() => setBulkDeleteOpen(false)} className="rounded-full border border-slate-700 px-4 py-2 text-slate-300 text-sm transition hover:border-slate-500">
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (onDeleteAssignment !== undefined) {
+                  for (const id of selectedIds) onDeleteAssignment(id);
+                }
+                setBulkDeleteOpen(false);
+                setSelectedIds(new Set());
+                setSelectionMode(false);
+              }}
+              className="rounded-full bg-rose-600 px-5 py-2 font-bold text-white text-sm ring-2 ring-rose-500/60 shadow-lg shadow-rose-700/40 transition hover:bg-rose-500 hover:ring-rose-400/70"
+            >
+              Borrar {selectedIds.size}
             </button>
           </div>
         </div>
