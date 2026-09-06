@@ -59,7 +59,14 @@ ${skillsHelp(spec.skills)}
 You initially only know skill names and short descriptions.
 Skills are not tools and their names are not callable functions.
 When a task matches a skill description, call the load_skill tool with the skill name, for example { "name": "use-uploaded-materials" }.
-Skill text may describe workflows, conventions, examples, or tools available elsewhere in the harness.`;
+Skill text may describe workflows, conventions, examples, or tools available elsewhere in the harness.
+
+CRITICAL RULE — TOOL INVOCATION:
+- The ONLY way to invoke tools (cli, load_skill) is via the function-calling API.
+- Your text output must NEVER contain a tool invocation. Not as JSON, not in brackets, not as a code block, not as pseudo-code.
+- Historical messages describing prior invocations are just context. Do not repeat, mimic, or continue their format in your own output.
+- If you need to run a tool, emit a function call. If not, produce a natural-language answer for the user.
+- Any text output that resembles a tool call will be discarded and the user will see nothing.`;
 
     return {
       name: spec.name,

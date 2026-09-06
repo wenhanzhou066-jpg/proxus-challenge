@@ -59,7 +59,9 @@ const toAiError = (description: string) =>
 
 type GeminiContentPart =
   | { readonly text: string }
-  | { readonly inlineData: { readonly mimeType: string; readonly data: string } };
+  | { readonly inlineData: { readonly mimeType: string; readonly data: string } }
+  | { readonly functionCall: { readonly name: string; readonly args: Record<string, unknown> } }
+  | { readonly functionResponse: { readonly name: string; readonly response: Record<string, unknown> } };
 
 interface GeminiTextContent {
   readonly role: "user" | "model";
@@ -68,6 +70,13 @@ interface GeminiTextContent {
 
 const messageText = (message: LanguageModel.ProviderOptions["prompt"]["content"][number]) =>
   messageParts(message).flatMap((part) => "text" in part ? [part.text] : []).join("\n");
+
+const toRecord = (value: unknown): Record<string, unknown> => {
+  if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return { result: value };
+};
 
 const messageParts = (message: LanguageModel.ProviderOptions["prompt"]["content"][number]): readonly GeminiContentPart[] => {
   if (typeof message.content === "string") {
@@ -84,6 +93,24 @@ const messageParts = (message: LanguageModel.ProviderOptions["prompt"]["content"
       return data === undefined
         ? []
         : [{ inlineData: { mimeType: part.mediaType, data } }];
+    }
+
+    if (part.type === "tool-call") {
+      return [{
+        functionCall: {
+          name: part.name,
+          args: toRecord(part.params)
+        }
+      }];
+    }
+
+    if (part.type === "tool-result") {
+      return [{
+        functionResponse: {
+          name: part.name,
+          response: toRecord(part.result)
+        }
+      }];
     }
 
     return [];
@@ -110,11 +137,16 @@ const promptSystemInstruction = (prompt: LanguageModel.ProviderOptions["prompt"]
     : { parts: [{ text }] };
 };
 
+const geminiRole = (role: string): "user" | "model" => {
+  if (role === "assistant") return "model";
+  return "user";
+};
+
 const promptContents = (prompt: LanguageModel.ProviderOptions["prompt"]): readonly GeminiTextContent[] =>
   prompt.content
     .filter((message) => message.role !== "system")
     .map((message) => ({
-      role: message.role === "assistant" ? "model" : "user",
+      role: geminiRole(message.role),
       parts: messageParts(message)
     }));
 
@@ -266,10 +298,12 @@ export const GeminiLanguageModelLive = Layer.effect(
       generateText: (options) =>
         Effect.tryPromise({
           try: async (signal) => {
+            const body = requestBody(options);
+            console.log("[gemini] request body:", JSON.stringify(body).slice(0, 1500));
             const response = await fetch(geminiUrl(config.model, config.apiKey), {
               method: "POST",
               headers: { "content-type": "application/json" },
-              body: JSON.stringify(requestBody(options)),
+              body: JSON.stringify(body),
               signal
             });
 

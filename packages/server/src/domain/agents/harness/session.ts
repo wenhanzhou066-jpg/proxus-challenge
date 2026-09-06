@@ -81,26 +81,35 @@ function execute(
 
     for (let step = 0; step < maxSteps; step++) {
       const prompt = renderPrompt(harness.systemPrompt, allMessages());
+      console.log(`[session] step ${step} generateText — messages: ${allMessages().length}`);
       const response: LanguageModel.GenerateTextResponse<AgentToolkit["tools"]> = yield* LanguageModel.generateText({
         prompt,
         toolkit,
         toolChoice: "auto" as const
       }).pipe(
         Effect.matchEffect({
-          onFailure: (error) => Effect.succeed(modelErrorResponse(error)),
+          onFailure: (error) => {
+            console.log(`[session] step ${step} generateText FAILED:`, error);
+            return Effect.succeed(modelErrorResponse(error));
+          },
           onSuccess: (response) => Effect.succeed(response)
         })
       );
 
+      console.log(`[session] step ${step} response — toolCalls: ${response.toolCalls.length}, toolResults: ${response.toolResults.length}, textLen: ${response.text.length}`);
+
       for (const toolCall of response.toolCalls) {
+        console.log(`[session] step ${step} toolCall:`, toolCall.name, JSON.stringify(toolCall.params).slice(0, 200));
         yield* appendMessage(AgentMessage.toolCall(toolCall.name, toolCall.params));
       }
 
       for (const toolResult of response.toolResults) {
+        console.log(`[session] step ${step} toolResult:`, toolResult.name, "failure:", toolResult.isFailure);
         yield* appendMessage(AgentMessage.toolResult(toolResult.name, toolResult.result, toolResult.isFailure));
       }
 
       if (response.toolResults.length === 0) {
+        console.log(`[session] step ${step} ending — text:`, response.text.slice(0, 200));
         const output = response.text.length > 0 ? response.text : lastToolResult;
         yield* appendMessage(AgentMessage.assistant(output));
         return {
@@ -167,7 +176,7 @@ const renderMessage = (message: AgentMessageType): Prompt.MessageEncoded => {
     case "tool-call":
       return {
         role: "assistant",
-        content: `Tool call ${message.name}: ${JSON.stringify(message.input)}`
+        content: `(Historial: en un turno anterior invoqué la función ${message.name} vía function-calling.)`
       };
     case "tool-result":
       if (!message.isFailure && isMaterialPageImages(message.result)) {
@@ -191,7 +200,7 @@ const renderMessage = (message: AgentMessageType): Prompt.MessageEncoded => {
 
       return {
         role: "user",
-        content: `Tool result ${message.name}${message.isFailure ? " failure" : ""}: ${formatToolResult(message.result)}`
+        content: `Resultado observado de la función ${message.name}${message.isFailure ? " (falló)" : ""}:\n${formatToolResult(message.result)}`
       };
   }
 };
