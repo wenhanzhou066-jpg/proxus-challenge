@@ -11,6 +11,7 @@ import type {
 import { useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
+import { ArrowLeft } from "lucide-react";
 import { artifactQuery, submitArtifactAttemptAction } from "../domain/artifacts/atoms.ts";
 import { useSettings } from "../domain/settings/hooks.ts";
 import { getFeedbackPalette } from "../domain/settings/feedback.ts";
@@ -20,14 +21,15 @@ type Answers = Record<string, string>;
 
 interface ArtifactWorkspaceProps {
   readonly artifactId: string | null;
+  readonly onClose?: () => void;
 }
 
-export function ArtifactWorkspace({ artifactId }: ArtifactWorkspaceProps) {
+export function ArtifactWorkspace({ artifactId, onClose }: ArtifactWorkspaceProps) {
   if (artifactId === null) {
     return <EmptyWorkspace />;
   }
 
-  return <ArtifactDetail artifactId={artifactId} />;
+  return <ArtifactDetail artifactId={artifactId} {...(onClose !== undefined ? { onClose } : {})} />;
 }
 
 function EmptyWorkspace() {
@@ -44,11 +46,23 @@ function EmptyWorkspace() {
   );
 }
 
-function ArtifactDetail({ artifactId }: { readonly artifactId: string }) {
+function ArtifactDetail({ artifactId, onClose }: { readonly artifactId: string; readonly onClose?: () => void }) {
   const artifact = useAtomValue(artifactQuery(artifactId));
 
   return (
-    <main className="h-screen min-w-0 overflow-y-auto border-slate-800 border-r bg-slate-950/60 p-6 max-md:h-auto max-md:border-r-0 max-md:border-b">
+    <main className="h-screen min-w-0 overflow-y-auto bg-slate-950/60 p-6 max-md:h-auto max-md:border-b">
+      {onClose !== undefined && (
+        <div className="mx-auto mb-4 flex max-w-4xl">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-700 px-3 text-slate-300 text-sm transition hover:border-sky-400 hover:bg-sky-500/10 hover:text-sky-200"
+          >
+            <ArrowLeft size={14} strokeWidth={1.8} aria-hidden />
+            Volver al chat
+          </button>
+        </div>
+      )}
       {AsyncResult.matchWithError(artifact, {
         onInitial: () => <p className="text-slate-400">Loading artifact…</p>,
         onError: (error) => <p className="text-red-200">{String(error)}</p>,

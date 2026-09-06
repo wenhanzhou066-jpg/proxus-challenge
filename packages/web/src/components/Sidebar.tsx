@@ -1,6 +1,7 @@
 import { useAtomValue } from "@effect/atom-react";
+import { getArtifactAssignmentMap, subscribeArtifactScope } from "../domain/artifacts/scope.ts";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
-import { CheckCircle2, MoreHorizontal, PanelLeft, Plus, Settings, X } from "lucide-react";
+import { CheckCircle2, ClipboardList, FileText, Folder, ListChecks, MoreHorizontal, PanelLeft, Plus, Settings, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { artifactsQuery } from "../domain/artifacts/atoms.ts";
@@ -329,29 +330,12 @@ export function Sidebar({
           onSuccess: ({ value }) => value.artifacts.length === 0
             ? <p className="text-slate-400">No notes, quizzes, or tests yet.</p>
             : (
-                <details className="rounded-2xl border border-slate-800 bg-slate-900">
-                  <summary className="cursor-pointer px-4 py-3 font-medium text-slate-100 marker:text-sky-400">
-                    {value.artifacts.length} artifact{value.artifacts.length === 1 ? "" : "s"}
-                  </summary>
-                  <ul className="grid gap-2 border-slate-800 border-t p-3">
-                    {value.artifacts.map((artifact) => (
-                      <li key={artifact.id}>
-                        <button
-                          className={`w-full rounded-xl p-3 text-left transition hover:border-sky-500 hover:bg-slate-950 ${
-                            selectedArtifactId === artifact.id
-                              ? "border border-sky-500 bg-sky-950/40"
-                              : "border border-transparent bg-slate-950/70"
-                          }`}
-                          type="button"
-                          onClick={() => onSelectArtifact(artifact.id)}
-                        >
-                          <strong className="block text-slate-100">{artifact.title}</strong>
-                          <span className="mt-1 block text-slate-400 text-sm">{artifact.kind} · {artifact.id}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
+                <ArtifactFolders
+                  artifacts={value.artifacts}
+                  assignments={assignments}
+                  selectedId={selectedArtifactId}
+                  onSelect={onSelectArtifact}
+                />
               )
         })}
       </section>
@@ -475,5 +459,97 @@ export function Sidebar({
       document.body
     )}
     </>
+  );
+}
+
+// Group artifacts by title so multiple types (note/quiz/test) that share a name
+// live inside the same collapsible "folder".
+type ArtifactSummary = { readonly id: string; readonly kind: string; readonly title: string };
+
+const KIND_META: Record<string, { readonly Icon: typeof FileText; readonly label: string; readonly color: string }> = {
+  note: { Icon: FileText, label: "Nota", color: "text-sky-300" },
+  quiz: { Icon: ListChecks, label: "Quiz", color: "text-amber-300" },
+  test: { Icon: ClipboardList, label: "Test", color: "text-fuchsia-300" }
+};
+
+function ArtifactFolders({
+  artifacts,
+  assignments,
+  selectedId,
+  onSelect
+}: {
+  readonly artifacts: ReadonlyArray<ArtifactSummary>;
+  readonly assignments: ReadonlyArray<Assignment>;
+  readonly selectedId: string | null;
+  readonly onSelect: (id: string) => void;
+}) {
+  const [scopeMap, setScopeMap] = useState<Readonly<Record<string, string>>>(() => getArtifactAssignmentMap());
+  useEffect(() => subscribeArtifactScope(() => setScopeMap(getArtifactAssignmentMap())), []);
+
+  const assignmentTitle = new Map(assignments.map((a) => [a.id, a.title]));
+  const groups = new Map<string, ArtifactSummary[]>();
+  for (const a of artifacts) {
+    const assignmentId = scopeMap[a.id];
+    const key = assignmentId !== undefined && assignmentTitle.has(assignmentId)
+      ? `assignment:${assignmentId}`
+      : "unassigned";
+    const arr = groups.get(key) ?? [];
+    arr.push(a);
+    groups.set(key, arr);
+  }
+  const entries = Array.from(groups.entries()).sort(([a], [b]) => {
+    if (a === "unassigned") return 1;
+    if (b === "unassigned") return -1;
+    return 0;
+  });
+
+  const folderLabel = (key: string) =>
+    key === "unassigned"
+      ? "Sin assignment"
+      : assignmentTitle.get(key.slice("assignment:".length)) ?? "Assignment eliminado";
+
+  return (
+    <ul className="grid gap-1">
+      {entries.map(([key, items]) => {
+        const containsSelected = items.some((i) => i.id === selectedId);
+        const title = folderLabel(key);
+        return (
+          <li key={key}>
+            <details open={containsSelected} className="group rounded-xl border border-slate-800 bg-slate-950/70 open:bg-slate-900">
+              <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 marker:hidden [&::-webkit-details-marker]:hidden">
+                <Folder size={14} className="shrink-0 text-slate-400 group-open:text-sky-300" aria-hidden />
+                <span className="min-w-0 flex-1 truncate font-medium text-slate-100 text-sm">{title}</span>
+                <span className="shrink-0 rounded-full bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 tabular-nums">
+                  {items.length}
+                </span>
+              </summary>
+              <ul className="grid gap-0.5 border-slate-800/60 border-t px-2 py-2">
+                {items.map((artifact) => {
+                  const meta = KIND_META[artifact.kind] ?? { Icon: FileText, label: artifact.kind, color: "text-slate-300" };
+                  const active = selectedId === artifact.id;
+                  return (
+                    <li key={artifact.id}>
+                      <button
+                        type="button"
+                        onClick={() => onSelect(artifact.id)}
+                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
+                          active ? "bg-sky-500/15 text-sky-100" : "text-slate-300 hover:bg-slate-800/70"
+                        }`}
+                      >
+                        <meta.Icon size={14} className={`shrink-0 ${active ? "text-sky-300" : meta.color}`} aria-hidden />
+                        <span className="min-w-0 flex-1 truncate">
+                          <span className={`mr-1.5 font-semibold ${meta.color}`}>{meta.label}</span>
+                          <span className="text-slate-400">{artifact.title}</span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
+          </li>
+        );
+      })}
+    </ul>
   );
 }

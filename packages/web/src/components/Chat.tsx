@@ -6,6 +6,7 @@ import "streamdown/styles.css";
 import { artifactsQuery } from "../domain/artifacts/atoms.ts";
 import { materialsQuery } from "../domain/materials/atoms.ts";
 import { applyInvalidations, invalidationsForToolCall } from "../domain/tutor/invalidation.ts";
+import { tagArtifactWithAssignment } from "../domain/artifacts/scope.ts";
 import { streamTutorMessage } from "../domain/tutor/stream.ts";
 import { clearMessages, loadMessages, saveMessages } from "../domain/assignments/storage.ts";
 import type { Assignment, Material } from "../domain/assignments/types.ts";
@@ -28,6 +29,24 @@ interface ChatProps {
   readonly onToggleSidebar?: () => void;
   readonly onOpenMaterialPreview?: (materialId: string) => void;
   readonly sidebarCollapsed?: boolean;
+}
+
+function extractArtifactId(result: unknown): string | null {
+  if (typeof result === "string") {
+    try {
+      const parsed = JSON.parse(result);
+      if (parsed !== null && typeof parsed === "object" && "id" in parsed && typeof parsed.id === "string") {
+        return parsed.id;
+      }
+    } catch {
+      const match = /"id"\s*:\s*"([^"]+)"/.exec(result);
+      return match?.[1] ?? null;
+    }
+  }
+  if (result !== null && typeof result === "object" && "id" in result && typeof (result as { id: unknown }).id === "string") {
+    return (result as { id: string }).id;
+  }
+  return null;
 }
 
 function appendTranscript(prev: string, chunk: string): string {
@@ -146,6 +165,11 @@ export function Chat({
               refreshArtifacts,
               refreshMaterials
             });
+            // Tag any created artifact with the current assignment so the sidebar can group it.
+            if (keys.includes("artifacts") && currentAssignment !== null) {
+              const createdId = extractArtifactId(message.result);
+              if (createdId !== null) tagArtifactWithAssignment(createdId, currentAssignment.id);
+            }
           }
         }
       }

@@ -20,6 +20,7 @@ import {
 import type { Assignment } from "./domain/assignments/types.ts";
 import { clearAll, loadMode, loadProfile, saveMode } from "./domain/personality/storage.ts";
 import type { Profile, UserMode } from "./domain/personality/types.ts";
+import { removeAssignmentTags } from "./domain/artifacts/scope.ts";
 import { precomputeMaterials } from "./domain/precompute/service.ts";
 import { clearAll as clearPrecomputeAll } from "./domain/precompute/storage.ts";
 import { clearDeck } from "./domain/precompute/srs.ts";
@@ -211,6 +212,7 @@ export function App() {
     onDeleteAssignment: (id: string) => {
       const target = assignments.find((a) => a.id === id);
       clearMessages(id);
+      removeAssignmentTags(id);
       // Purge per-material caches for this assignment
       if (target !== undefined) {
         for (const material of target.materials) {
@@ -321,13 +323,13 @@ export function App() {
         <ResizeHandle onResize={(x) => setSidebarWidth(clamp(x, SIDEBAR_MIN, maxSidebarNow))} />
       )}
 
-      {artifactVisible && (
-        <div style={{ width: ARTIFACT_WIDTH, flexShrink: 0 }} className="h-screen overflow-hidden">
-          <ArtifactWorkspace artifactId={selectedArtifactId} />
+      {artifactVisible ? (
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+          <ArtifactWorkspace artifactId={selectedArtifactId} onClose={() => setSelectedArtifactId(null)} />
         </div>
+      ) : (
+        chatEl
       )}
-
-      {chatEl}
 
       <AnimatedPdfPanel
         visible={pdfPanelVisible && selectedMaterialId !== null}
