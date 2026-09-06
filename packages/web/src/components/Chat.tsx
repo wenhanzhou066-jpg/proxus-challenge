@@ -1,6 +1,6 @@
 import { useAtomRefresh } from "@effect/atom-react";
 import type { AgentMessage, ConceptualQuestion, MaterialAnalysis } from "@proxus/shared";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
 import { artifactsQuery } from "../domain/artifacts/atoms.ts";
@@ -328,7 +328,7 @@ export function Chat({
   );
 }
 
-function MessageBubble({ message }: { readonly message: AgentMessage }) {
+const MessageBubble = memo(function MessageBubble({ message }: { readonly message: AgentMessage }) {
   if (message.role === "tool-call" || message.role === "tool-result") {
     return (
       <details className="w-full rounded-2xl border border-slate-800 bg-slate-950 p-4 text-slate-400">
@@ -361,4 +361,4 @@ function MessageBubble({ message }: { readonly message: AgentMessage }) {
       </div>
     </article>
   );
-}
+});

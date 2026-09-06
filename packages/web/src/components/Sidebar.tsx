@@ -196,7 +196,7 @@ export function Sidebar({
                 return (
                   <li
                     key={assignment.id}
-                    className={`group relative flex items-center rounded-xl border transition ${
+                    className={`group relative flex min-w-0 items-center overflow-hidden rounded-xl border transition ${
                       active
                         ? "border-sky-500 bg-sky-950/40"
                         : "border-transparent bg-slate-950/70 hover:border-sky-500 hover:bg-slate-950"
@@ -514,9 +514,9 @@ function ArtifactFolders({
         const containsSelected = items.some((i) => i.id === selectedId);
         const title = folderLabel(key);
         return (
-          <li key={key}>
+          <li key={key} className="min-w-0 overflow-hidden">
             <details open={containsSelected} className="group rounded-xl border border-slate-800 bg-slate-950/70 open:bg-slate-900">
-              <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 marker:hidden [&::-webkit-details-marker]:hidden">
+              <summary className="flex min-w-0 cursor-pointer items-center gap-2 overflow-hidden px-3 py-2 marker:hidden [&::-webkit-details-marker]:hidden">
                 <Folder size={14} className="shrink-0 text-slate-400 group-open:text-sky-300" aria-hidden />
                 <span className="min-w-0 flex-1 truncate font-medium text-slate-100 text-sm">{title}</span>
                 <span className="shrink-0 rounded-full bg-slate-800 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 tabular-nums">
@@ -528,11 +528,11 @@ function ArtifactFolders({
                   const meta = KIND_META[artifact.kind] ?? { Icon: FileText, label: artifact.kind, color: "text-slate-300" };
                   const active = selectedId === artifact.id;
                   return (
-                    <li key={artifact.id}>
+                    <li key={artifact.id} className="min-w-0 overflow-hidden">
                       <button
                         type="button"
                         onClick={() => onSelect(artifact.id)}
-                        className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition ${
+                        className={`flex w-full min-w-0 items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-left text-sm transition ${
                           active ? "bg-sky-500/15 text-sky-100" : "text-slate-300 hover:bg-slate-800/70"
                         }`}
                       >

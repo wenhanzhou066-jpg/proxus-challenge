@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ArtifactWorkspace } from "./components/ArtifactWorkspace.tsx";
 import { Chat } from "./components/Chat.tsx";
 import { CreateAssignmentModal } from "./components/CreateAssignmentModal.tsx";
@@ -28,9 +28,7 @@ import { clearDeck } from "./domain/precompute/srs.ts";
 // ── Layout constants ──
 const MOBILE_BREAKPOINT = 768;
 
-const SIDEBAR_DEFAULT = 280;
-const SIDEBAR_MIN = 200;
-const SIDEBAR_MAX = 480;
+const SIDEBAR_WIDTH = 280;
 
 const PDF_DEFAULT = 420;
 const PDF_MIN = 280;
@@ -91,15 +89,18 @@ function clamp(value: number, min: number, max: number) {
 function useWindowWidth() {
   const [width, setWidth] = useState(() => window.innerWidth);
   useEffect(() => {
-    let raf = 0;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
     const handler = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setWidth(window.innerWidth));
+      if (timeoutId !== null) return;
+      timeoutId = setTimeout(() => {
+        timeoutId = null;
+        setWidth(window.innerWidth);
+      }, 100);
     };
     window.addEventListener("resize", handler);
     return () => {
       window.removeEventListener("resize", handler);
-      cancelAnimationFrame(raf);
+      if (timeoutId !== null) clearTimeout(timeoutId);
     };
   }, []);
   return width;
@@ -113,7 +114,7 @@ export function App() {
   const [selectedMaterialId, setSelectedMaterialId] = useState<string | null>(null);
   const [mobilePreviewId, setMobilePreviewId] = useState<string | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.innerWidth < MOBILE_BREAKPOINT);
-  const [sidebarWidth, setSidebarWidth] = useState(SIDEBAR_DEFAULT);
+  const sidebarWidth = SIDEBAR_WIDTH;
   const [pdfWidth, setPdfWidth] = useState(PDF_DEFAULT);
   const [mode, setMode] = useState<UserMode | null>(() => loadMode());
   const [profile, setProfile] = useState<Profile | null>(() => loadProfile());
@@ -121,6 +122,7 @@ export function App() {
   const [currentAssignmentId, setCurrentAssignmentIdState] = useState<string | null>(() => loadCurrentId());
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const closePdf = useCallback(() => setSelectedMaterialId(null), []);
 
   function updateAssignments(next: ReadonlyArray<Assignment>) {
     setAssignments(next);
@@ -166,23 +168,16 @@ export function App() {
   const artifactVisible = selectedArtifactId !== null && !isMobile;
   const pdfPanelVisible = !isMobile && selectedMaterialId !== null && currentMaterials.length > 0 && selectedArtifactId === null;
 
-  // ── Live max-width computation given other visible panels ──
-  const otherReservedWidth =
-    (artifactVisible ? ARTIFACT_WIDTH : 0) +
-    (pdfPanelVisible ? pdfWidth : 0);
+  // ── PDF panel max-width computation ──
   const otherReservedForPdf =
     (artifactVisible ? ARTIFACT_WIDTH : 0) +
     (!sidebarCollapsed && !isMobile ? sidebarWidth : 0);
-
-  const maxSidebarNow = clamp(windowWidth - otherReservedWidth - CHAT_MIN_WIDTH, SIDEBAR_MIN, SIDEBAR_MAX);
   const maxPdfNow = clamp(windowWidth - otherReservedForPdf - CHAT_MIN_WIDTH, PDF_MIN, PDF_MAX);
 
-  // ── Clamp widths when window resizes or panel visibility changes ──
   useEffect(() => {
     if (isMobile) return;
-    setSidebarWidth((w) => Math.min(w, maxSidebarNow));
     setPdfWidth((w) => Math.min(w, maxPdfNow));
-  }, [windowWidth, isMobile, artifactVisible, pdfPanelVisible, maxSidebarNow, maxPdfNow]);
+  }, [windowWidth, isMobile, artifactVisible, maxPdfNow]);
 
   if (mode === null) {
     return <OnboardingChoice onChoose={handleChooseMode} />;
@@ -319,9 +314,6 @@ export function App() {
         collapsed={sidebarCollapsed}
         width={sidebarWidth}
       />
-      {!sidebarCollapsed && (
-        <ResizeHandle onResize={(x) => setSidebarWidth(clamp(x, SIDEBAR_MIN, maxSidebarNow))} />
-      )}
 
       {artifactVisible ? (
         <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
@@ -341,7 +333,7 @@ export function App() {
             materials={currentMaterials}
             selectedId={selectedMaterialId}
             onSelectId={setSelectedMaterialId}
-            onClose={() => setSelectedMaterialId(null)}
+            onClose={closePdf}
           />
         )}
       </AnimatedPdfPanel>

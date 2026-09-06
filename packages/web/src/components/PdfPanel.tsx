@@ -1,5 +1,5 @@
 import { ChevronLeft, ChevronRight, Columns, Download, FileText, Minus, Plus, RotateCcw, RotateCw, X } from "lucide-react";
-import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
@@ -23,7 +23,9 @@ const ZOOM_STEPS = [0.6, 0.75, 1, 1.25, 1.5] as const;
 const ZOOM_DEFAULT_INDEX = 2;
 const COMPACT_WIDTH = 380; // hide zoom controls below this panel width
 
-export function PdfPanel({ materials, selectedId, onSelectId, onClose, style, className = "" }: PdfPanelProps) {
+export const PdfPanel = memo(_PdfPanel);
+
+function _PdfPanel({ materials, selectedId, onSelectId, onClose, style, className = "" }: PdfPanelProps) {
   const selected = materials.find((m) => m.id === selectedId) ?? materials[0];
   const [numPages, setNumPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
