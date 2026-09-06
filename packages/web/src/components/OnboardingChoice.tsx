@@ -1,10 +1,15 @@
 import type { UserMode } from "../domain/personality/types.ts";
+import { useSettings } from "../domain/settings/hooks.ts";
+import { CVD_LABEL, type Cvd } from "../domain/settings/types.ts";
+
+const CVD_OPTIONS: ReadonlyArray<Cvd> = ["none", "deutan", "protan", "tritan"];
 
 interface Props {
   onChoose: (mode: UserMode) => void;
 }
 
 export function OnboardingChoice({ onChoose }: Props) {
+  const [settings, setSettings] = useSettings();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/95 p-6 backdrop-blur">
       <div className="relative w-full max-w-4xl">
@@ -39,6 +44,48 @@ export function OnboardingChoice({ onChoose }: Props) {
               highlight
             />
           </div>
+
+          <section
+            className="mt-8 rounded-2xl border border-slate-800 bg-slate-950/60 p-5"
+            aria-labelledby="cvd-heading"
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <h2 id="cvd-heading" className="font-bold text-slate-100 text-base">
+                  Accesibilidad · Filtro daltónico
+                </h2>
+                <p className="mt-1 text-slate-400 text-xs">
+                  Ajusta la paleta si tienes daltonismo. Los símbolos ▲ ● ■ ◆ acompañan a cada color.
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-slate-800 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Opcional
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {CVD_OPTIONS.map((option) => {
+                const active = settings.cvd === option;
+                return (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setSettings({ ...settings, cvd: option })}
+                    aria-pressed={active}
+                    className={`rounded-full border px-4 py-1.5 text-sm transition ${
+                      active
+                        ? "border-sky-400 bg-sky-500/15 text-sky-200"
+                        : "border-slate-700 bg-slate-900/60 text-slate-300 hover:border-slate-500"
+                    }`}
+                  >
+                    {CVD_LABEL[option]}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="mt-3 text-slate-500 text-xs">
+              Podrás cambiarlo luego desde tu perfil en la barra lateral.
+            </p>
+          </section>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { VoiceInputButton } from "./VoiceInputButton.tsx";
 
 interface Props {
   readonly prompt: string;
@@ -20,13 +21,21 @@ export function PredictionPrompt({ prompt, onCommit, minChars = 15 }: Props) {
         <span className="mr-1.5 rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-300 text-xs uppercase tracking-wider">Predict</span>
         {prompt}
       </p>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.currentTarget.value)}
-        rows={3}
-        placeholder="Take a guess — anything is fine. This isn't graded."
-        className="w-full resize-y rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 text-sm outline-none focus:border-amber-400"
-      />
+      <div className="relative">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.currentTarget.value)}
+          rows={3}
+          placeholder="Take a guess — anything is fine. This isn't graded."
+          className="w-full resize-y rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 pr-11 text-slate-100 text-sm outline-none focus:border-amber-400"
+        />
+        <div className="absolute right-1.5 bottom-1.5">
+          <VoiceInputButton
+            size="sm"
+            onFinalTranscript={(chunk) => setText((prev) => prev.length === 0 ? chunk : `${prev}${prev.endsWith(" ") ? "" : " "}${chunk}`)}
+          />
+        </div>
+      </div>
       <div className="flex items-center justify-between">
         <span className="text-slate-500 text-xs">
           {ready ? "Ready" : `${minChars - text.trim().length} more chars`}

@@ -12,6 +12,9 @@ import { useMemo, useState } from "react";
 import { Streamdown } from "streamdown";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
 import { artifactQuery, submitArtifactAttemptAction } from "../domain/artifacts/atoms.ts";
+import { useSettings } from "../domain/settings/hooks.ts";
+import { getFeedbackPalette } from "../domain/settings/feedback.ts";
+import { FeedbackBadge } from "./FeedbackBadge.tsx";
 
 type Answers = Record<string, string>;
 
@@ -287,22 +290,28 @@ function TrueFalseInput({
 }
 
 function AttemptSummary({ attempt }: { readonly attempt: Extract<ArtifactAttempt, { readonly status: "graded" }> }) {
+  const [{ cvd }] = useSettings();
+  const passed = attempt.score / Math.max(1, attempt.maxScore) >= 0.6;
+  const palette = getFeedbackPalette(passed ? "pass" : "fail", cvd);
   return (
-    <section className="mt-6 rounded-3xl border border-emerald-900 bg-emerald-950/30 p-5">
-      <p className="font-bold text-emerald-200 text-xl">Score: {attempt.score} / {attempt.maxScore}</p>
-      <p className="mt-1 text-emerald-100/80">{attempt.summary}</p>
+    <section className={`mt-6 rounded-3xl border p-5 ${palette.softBg} ${palette.border}`}>
+      <p className={`flex items-center gap-2 font-bold text-xl ${palette.text}`}>
+        <span aria-hidden>{palette.icon}</span>
+        Score: {attempt.score} / {attempt.maxScore}
+      </p>
+      <p className="mt-1 text-slate-200/90">{attempt.summary}</p>
     </section>
   );
 }
 
 function CorrectionBadge({ correction }: { readonly correction: QuestionCorrection }) {
   if (correction.questionType === "short-answer") {
-    return <span className="rounded-full bg-sky-950 px-3 py-1 font-semibold text-sky-200 text-sm">{correction.score}/{correction.maxScore}</span>;
+    return <FeedbackBadge kind="partial">{correction.score}/{correction.maxScore}</FeedbackBadge>;
   }
 
   return correction.correct
-    ? <span className="rounded-full bg-emerald-950 px-3 py-1 font-semibold text-emerald-200 text-sm">Correct</span>
-    : <span className="rounded-full bg-red-950 px-3 py-1 font-semibold text-red-200 text-sm">Review</span>;
+    ? <FeedbackBadge kind="pass">Correcto</FeedbackBadge>
+    : <FeedbackBadge kind="fail">Revisar</FeedbackBadge>;
 }
 
 function CorrectionDetails({

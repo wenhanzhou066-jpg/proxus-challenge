@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { Assignment, Material } from "../domain/assignments/types.ts";
 import type { Profile } from "../domain/personality/types.ts";
-import { COLOR_GRADIENT, COLOR_LABEL, COLOR_METHODS } from "../domain/personality/types.ts";
+import { COLOR_LABEL, COLOR_METHODS, getColorGradient } from "../domain/personality/types.ts";
+import { useSettings } from "../domain/settings/hooks.ts";
 import { getStrategy } from "../domain/personality/strategy.ts";
 import { usePrecomputeAnalysis, usePrecomputeStatus } from "../domain/precompute/hooks.ts";
 import { precomputeMaterial } from "../domain/precompute/service.ts";
@@ -74,6 +75,7 @@ function formatSize(bytes: number): string {
 export function StudyMenu({ profile, currentAssignment = null, hasAssignments = true, onPick, onOpenCreateAssignment, onOpenMaterialPreview, onStartSession }: Props) {
   const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const [{ cvd }] = useSettings();
 
   const strategy = getStrategy(profile);
 
@@ -240,7 +242,7 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
                 className="group relative overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-left transition hover:border-sky-400 focus-visible:border-sky-400 focus-visible:outline-none"
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-r opacity-10 transition group-hover:opacity-20 ${COLOR_GRADIENT[profile.primary]}`}
+                  className={`absolute inset-0 bg-gradient-to-r opacity-10 transition group-hover:opacity-20 ${getColorGradient(profile.primary, cvd)}`}
                 />
                 <span className="relative text-sm font-semibold text-slate-100">{method}</span>
               </button>

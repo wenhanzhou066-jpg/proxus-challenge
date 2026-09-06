@@ -3,15 +3,17 @@ import { TETRADS } from "../domain/personality/questions.ts";
 import { score } from "../domain/personality/scoring.ts";
 import { saveProfile } from "../domain/personality/storage.ts";
 import {
-  COLOR_GRADIENT,
-  COLOR_HEX,
   COLOR_LABEL,
   COLOR_METHODS,
+  COLOR_SYMBOL,
   COLOR_TRAIT,
+  getColorGradient,
+  getColorHex,
   type Answer,
   type Color,
   type Profile
 } from "../domain/personality/types.ts";
+import { useSettings } from "../domain/settings/hooks.ts";
 
 const COLORS: ReadonlyArray<Color> = ["R", "Y", "G", "B"];
 
@@ -216,11 +218,12 @@ interface ResultProps {
 }
 
 function ResultScreen({ profile, onContinue }: ResultProps) {
+  const [{ cvd }] = useSettings();
   return (
     <div className="relative min-h-screen overflow-y-auto bg-slate-950 text-slate-100">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
-          className={`absolute inset-x-0 top-0 h-[60vh] bg-gradient-to-b opacity-20 ${COLOR_GRADIENT[profile.primary]}`}
+          className={`absolute inset-x-0 top-0 h-[60vh] bg-gradient-to-b opacity-20 ${getColorGradient(profile.primary, cvd)}`}
         />
         <div className="absolute inset-x-0 top-0 h-96 bg-gradient-to-b from-slate-950/0 to-slate-950" />
       </div>
@@ -229,9 +232,9 @@ function ResultScreen({ profile, onContinue }: ResultProps) {
         <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Your profile</p>
         <h1 className="mt-3 text-6xl font-black sm:text-7xl">
           <span
-            className={`bg-gradient-to-r bg-clip-text text-transparent ${COLOR_GRADIENT[profile.primary]}`}
+            className={`bg-gradient-to-r bg-clip-text text-transparent ${getColorGradient(profile.primary, cvd)}`}
           >
-            {COLOR_LABEL[profile.primary]}
+            {COLOR_SYMBOL[profile.primary]} {COLOR_LABEL[profile.primary]}
           </span>
         </h1>
         <p className="mt-2 text-2xl font-semibold text-slate-200">
@@ -240,8 +243,8 @@ function ResultScreen({ profile, onContinue }: ResultProps) {
             <>
               {" "}
               <span className="text-slate-500">with</span>{" "}
-              <span style={{ color: COLOR_HEX[profile.secondary] }}>
-                {COLOR_LABEL[profile.secondary]}
+              <span style={{ color: getColorHex(profile.secondary, cvd) }}>
+                {COLOR_SYMBOL[profile.secondary]} {COLOR_LABEL[profile.secondary]}
               </span>
             </>
           )}
@@ -255,14 +258,14 @@ function ResultScreen({ profile, onContinue }: ResultProps) {
             {COLORS.map((color) => (
               <div key={color}>
                 <div className="mb-1.5 flex justify-between text-sm">
-                  <span className="font-semibold" style={{ color: COLOR_HEX[color] }}>
-                    {COLOR_LABEL[color]} · {COLOR_TRAIT[color]}
+                  <span className="font-semibold" style={{ color: getColorHex(color, cvd) }}>
+                    {COLOR_SYMBOL[color]} {COLOR_LABEL[color]} · {COLOR_TRAIT[color]}
                   </span>
                   <span className="font-mono text-slate-400">{profile.percent[color]}%</span>
                 </div>
                 <div className="h-3 overflow-hidden rounded-full bg-slate-800/80">
                   <div
-                    className={`h-full rounded-full bg-gradient-to-r transition-all ${COLOR_GRADIENT[color]}`}
+                    className={`h-full rounded-full bg-gradient-to-r transition-all ${getColorGradient(color, cvd)}`}
                     style={{ width: `${profile.percent[color]}%` }}
                   />
                 </div>
@@ -285,7 +288,7 @@ function ResultScreen({ profile, onContinue }: ResultProps) {
                 className="group relative overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3"
               >
                 <div
-                  className={`absolute inset-0 bg-gradient-to-r opacity-10 transition group-hover:opacity-20 ${COLOR_GRADIENT[profile.primary]}`}
+                  className={`absolute inset-0 bg-gradient-to-r opacity-10 transition group-hover:opacity-20 ${getColorGradient(profile.primary, cvd)}`}
                 />
                 <span className="relative text-sm font-semibold text-slate-100">{method}</span>
               </div>

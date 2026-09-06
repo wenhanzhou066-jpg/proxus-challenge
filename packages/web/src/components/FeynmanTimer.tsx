@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { VoiceInputButton } from "./VoiceInputButton.tsx";
 
 interface Props {
   readonly totalSeconds: number;
@@ -94,14 +95,24 @@ export function FeynmanTimer({
           </button>
         </div>
       </div>
-      <textarea
-        value={text}
-        onChange={(e) => setText(e.currentTarget.value)}
-        disabled={submitted}
-        rows={5}
-        placeholder={placeholder}
-        className="w-full resize-y rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 text-sm outline-none focus:border-sky-400 disabled:opacity-70"
-      />
+      <div className="relative">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.currentTarget.value)}
+          disabled={submitted}
+          rows={5}
+          placeholder={placeholder}
+          className="w-full resize-y rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 pr-11 text-slate-100 text-sm outline-none focus:border-sky-400 disabled:opacity-70"
+        />
+        {!submitted && (
+          <div className="absolute right-1.5 bottom-1.5">
+            <VoiceInputButton
+              size="sm"
+              onFinalTranscript={(chunk) => setText((prev) => prev.length === 0 ? chunk : `${prev}${prev.endsWith(" ") ? "" : " "}${chunk}`)}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

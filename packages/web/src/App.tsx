@@ -7,6 +7,7 @@ import { PdfPanel } from "./components/PdfPanel.tsx";
 import { PdfPreviewModal } from "./components/PdfPreviewModal.tsx";
 import { PersonalityQuiz } from "./components/PersonalityQuiz.tsx";
 import { ResizeHandle } from "./components/ResizeHandle.tsx";
+import { SettingsModal } from "./components/SettingsModal.tsx";
 import { Sidebar } from "./components/Sidebar.tsx";
 import {
   clearMessages,
@@ -74,6 +75,7 @@ export function App() {
   const [assignments, setAssignments] = useState<ReadonlyArray<Assignment>>(() => loadAssignments());
   const [currentAssignmentId, setCurrentAssignmentIdState] = useState<string | null>(() => loadCurrentId());
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   function updateAssignments(next: ReadonlyArray<Assignment>) {
     setAssignments(next);
@@ -179,9 +181,13 @@ export function App() {
       updateAssignments(assignments.map((a) => a.id === id ? { ...a, title: newTitle } : a));
     },
     onToggleCollapse: toggleSidebar,
+    onOpenSettings: () => setShowSettings(true),
   };
 
-  const modals = showCreateModal && (
+  const modals = (
+    <>
+    {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+    {showCreateModal && (
     <CreateAssignmentModal
       onClose={() => setShowCreateModal(false)}
       onCreate={(title, description, materials) => {
@@ -199,6 +205,8 @@ export function App() {
         }
       }}
     />
+    )}
+    </>
   );
 
   const openMaterialPreview = (materialId: string) => {

@@ -14,6 +14,7 @@ import type { Profile } from "../domain/personality/types.ts";
 import { loadAnalysis } from "../domain/precompute/storage.ts";
 import { StudyMenu } from "./StudyMenu.tsx";
 import { StudySession } from "./StudySession.tsx";
+import { VoiceInputButton } from "./VoiceInputButton.tsx";
 
 interface ChatProps {
   readonly profile?: Profile | null;
@@ -23,6 +24,13 @@ interface ChatProps {
   readonly onResetPreferences?: () => void;
   readonly onToggleSidebar?: () => void;
   readonly onOpenMaterialPreview?: (materialId: string) => void;
+}
+
+function appendTranscript(prev: string, chunk: string): string {
+  const clean = chunk.trim();
+  if (clean.length === 0) return prev;
+  if (prev.length === 0) return clean;
+  return `${prev}${prev.endsWith(" ") ? "" : " "}${clean}`;
 }
 
 export function Chat({
@@ -144,20 +152,6 @@ export function Chat({
   return (
     <main className="grid h-screen max-h-screen min-w-0 flex-1 grid-rows-[auto_1fr_auto_auto] bg-slate-950 max-md:h-auto max-md:max-h-none">
       <header className="flex items-center justify-between gap-4 border-slate-800 border-b px-4 py-5">
-        <div className="flex shrink-0 items-center gap-1">
-          {onToggleSidebar !== undefined && (
-            <button
-              type="button"
-              onClick={onToggleSidebar}
-              title="Toggle sidebar"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-800 hover:text-slate-100"
-            >
-              <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          )}
-        </div>
         <div className="min-w-0 flex-1">
           <h1 className="m-0 truncate font-bold text-2xl text-slate-100">
             {currentAssignment !== null ? currentAssignment.title : "Academic tutor"}
@@ -233,19 +227,26 @@ export function Chat({
           void submit(input);
         }}
       >
-        <textarea
-          className="w-full resize-y rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-transparent focus:ring-2 focus:ring-sky-400"
-          value={input}
-          onChange={(event) => setInput(event.currentTarget.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
-              event.preventDefault();
-              void submit(input);
-            }
-          }}
-          placeholder="Ask your tutor something… (Shift+Enter for newline)"
-          rows={3}
-        />
+        <div className="relative">
+          <textarea
+            className="w-full resize-y rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3 pr-14 text-slate-100 outline-none focus:border-transparent focus:ring-2 focus:ring-sky-400"
+            value={input}
+            onChange={(event) => setInput(event.currentTarget.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                void submit(input);
+              }
+            }}
+            placeholder="Pregunta a tu tutor… (Shift+Enter salto de línea, mic para dictar)"
+            rows={3}
+          />
+          <div className="absolute right-2 bottom-2">
+            <VoiceInputButton
+              onFinalTranscript={(text) => setInput((prev) => appendTranscript(prev, text))}
+            />
+          </div>
+        </div>
         <button
           className="self-end rounded-full bg-sky-500 px-6 py-3 font-bold text-slate-950 text-sm uppercase tracking-wider shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 hover:shadow-sky-400/30 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
           type="submit"

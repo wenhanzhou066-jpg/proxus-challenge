@@ -5,6 +5,8 @@ import { recordOutcome } from "../domain/precompute/srs.ts";
 import type { StudyStrategy } from "../domain/personality/strategy.ts";
 import { FeynmanTimer } from "./FeynmanTimer.tsx";
 import { PredictionPrompt } from "./PredictionPrompt.tsx";
+import { useSettings } from "../domain/settings/hooks.ts";
+import { getFeedbackPalette } from "../domain/settings/feedback.ts";
 
 interface Props {
   readonly materialId: string;
@@ -18,6 +20,9 @@ interface Props {
 type Phase = "predict" | "question" | "feynman" | "graded";
 
 export function StudySession({ materialId, materialName, questions, strategy, onEscape, onExit }: Props) {
+  const [{ cvd }] = useSettings();
+  const passPalette = getFeedbackPalette("pass", cvd);
+  const failPalette = getFeedbackPalette("fail", cvd);
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<Phase>(strategy.requirePrediction ? "predict" : "question");
   const [revealedHints, setRevealedHints] = useState(strategy.hintsUpFront);
@@ -175,10 +180,11 @@ export function StudySession({ materialId, materialName, questions, strategy, on
             <div className="grid gap-3 border-slate-800 border-t pt-4">
               <div className="flex items-center gap-3">
                 <span
-                  className={`rounded-full px-3 py-0.5 font-semibold text-xs ${
-                    passed ? "bg-emerald-500/20 text-emerald-300" : "bg-rose-500/20 text-rose-300"
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 font-semibold text-xs ${
+                    passed ? `${passPalette.softBg} ${passPalette.text}` : `${failPalette.softBg} ${failPalette.text}`
                   }`}
                 >
+                  <span aria-hidden>{passed ? passPalette.icon : failPalette.icon}</span>
                   {Math.round(grade.coverage * 100)}% coverage — {passed ? "passed" : "review"}
                 </span>
                 <span className="text-slate-500 text-xs">
@@ -188,18 +194,18 @@ export function StudySession({ materialId, materialName, questions, strategy, on
 
               {grade.covered.length > 0 && (
                 <div>
-                  <p className="mb-1 font-semibold text-emerald-300 text-xs uppercase tracking-wider">Covered</p>
+                  <p className={`mb-1 font-semibold text-xs uppercase tracking-wider ${passPalette.text}`}>{passPalette.icon} Covered</p>
                   <ul className="grid gap-0.5 text-slate-300 text-sm">
-                    {grade.covered.map((p, i) => <li key={i}>✓ {p}</li>)}
+                    {grade.covered.map((p, i) => <li key={i}>{passPalette.icon} {p}</li>)}
                   </ul>
                 </div>
               )}
 
               {grade.missing.length > 0 && (
                 <div>
-                  <p className="mb-1 font-semibold text-rose-300 text-xs uppercase tracking-wider">Missed — go back to these</p>
+                  <p className={`mb-1 font-semibold text-xs uppercase tracking-wider ${failPalette.text}`}>{failPalette.icon} Missed — go back to these</p>
                   <ul className="grid gap-0.5 text-slate-300 text-sm">
-                    {grade.missing.map((p, i) => <li key={i}>✗ {p}</li>)}
+                    {grade.missing.map((p, i) => <li key={i}>{failPalette.icon} {p}</li>)}
                   </ul>
                 </div>
               )}
@@ -214,24 +220,24 @@ export function StudySession({ materialId, materialName, questions, strategy, on
                 <button
                   type="button"
                   onClick={() => overrideOutcome(false)}
-                  className={`rounded-full border px-3 py-1 text-xs transition ${
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition ${
                     correctOverride === false
-                      ? "border-rose-400 bg-rose-500/15 text-rose-200"
-                      : "border-slate-700 text-slate-400 hover:border-rose-500"
+                      ? `${failPalette.border} ${failPalette.softBg} ${failPalette.text}`
+                      : "border-slate-700 text-slate-400 hover:border-slate-500"
                   }`}
                 >
-                  I missed it
+                  <span aria-hidden>{failPalette.icon}</span> I missed it
                 </button>
                 <button
                   type="button"
                   onClick={() => overrideOutcome(true)}
-                  className={`rounded-full border px-3 py-1 text-xs transition ${
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs transition ${
                     correctOverride === true
-                      ? "border-emerald-400 bg-emerald-500/15 text-emerald-200"
-                      : "border-slate-700 text-slate-400 hover:border-emerald-500"
+                      ? `${passPalette.border} ${passPalette.softBg} ${passPalette.text}`
+                      : "border-slate-700 text-slate-400 hover:border-slate-500"
                   }`}
                 >
-                  I got it
+                  <span aria-hidden>{passPalette.icon}</span> I got it
                 </button>
                 <button
                   type="button"

@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { artifactsQuery } from "../domain/artifacts/atoms.ts";
 import { materialsQuery } from "../domain/materials/atoms.ts";
 import type { Assignment } from "../domain/assignments/types.ts";
+import { useSettings } from "../domain/settings/hooks.ts";
 
 interface SidebarProps {
   readonly selectedArtifactId: string | null;
@@ -18,6 +19,7 @@ interface SidebarProps {
   readonly collapsed?: boolean;
   readonly width?: number;
   readonly onToggleCollapse?: () => void;
+  readonly onOpenSettings?: () => void;
 }
 
 export function Sidebar({
@@ -31,10 +33,27 @@ export function Sidebar({
   onRenameAssignment,
   collapsed = false,
   width = 300,
-  onToggleCollapse
+  onToggleCollapse,
+  onOpenSettings
 }: SidebarProps) {
   const materials = useAtomValue(materialsQuery);
   const artifacts = useAtomValue(artifactsQuery);
+  const [settings] = useSettings();
+  const [animatingCollapse, setAnimatingCollapse] = useState(false);
+  const firstRenderRef = useRef(true);
+  useEffect(() => {
+    if (firstRenderRef.current) { firstRenderRef.current = false; return; }
+    setAnimatingCollapse(true);
+    const t = setTimeout(() => setAnimatingCollapse(false), 300);
+    return () => clearTimeout(t);
+  }, [collapsed]);
+  const displayName = settings.name.trim().length > 0 ? settings.name.trim() : "Estudiante";
+  const initials = displayName
+    .split(/\s+/)
+    .map((word) => word.charAt(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "?";
   const showAssignments = onSelectAssignment !== undefined && onOpenCreateAssignment !== undefined;
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
@@ -69,51 +88,21 @@ export function Sidebar({
 
   const deletingAssignment = deletingId !== null ? assignments.find((a) => a.id === deletingId) ?? null : null;
 
-  if (collapsed) {
-    return (
-      <>
-        {deletingAssignment !== null && createPortal(
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm"
-            role="dialog"
-            aria-modal="true"
-            onClick={() => setDeletingId(null)}
-          >
-            <div
-              className="w-full max-w-[320px] rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl text-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h2 className="font-bold text-slate-100 text-base">Delete assignment?</h2>
-              <p className="mt-2 text-slate-400 text-sm">
-                "<span className="font-semibold text-slate-200">{deletingAssignment.title}</span>"
-              </p>
-              <p className="mt-1 text-rose-400 text-xs font-medium">This action is irreversible.</p>
-              <div className="mt-5 flex justify-center gap-2">
-                <button type="button" onClick={() => setDeletingId(null)} className="rounded-full border border-slate-700 px-4 py-2 text-slate-300 text-sm transition hover:border-slate-500">
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { if (onDeleteAssignment !== undefined) onDeleteAssignment(deletingAssignment.id); setDeletingId(null); }}
-                  className="rounded-full bg-rose-600 px-5 py-2 font-bold text-white text-sm ring-2 ring-rose-500/60 shadow-lg shadow-rose-700/40 transition hover:bg-rose-500 hover:ring-rose-400/70"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body
-        )}
-      </>
-    );
-  }
-
   return (
     <>
     <aside
-      className="flex h-screen shrink-0 flex-col overflow-y-auto border-slate-800 border-r bg-slate-950 px-3 py-5 max-md:h-auto max-md:max-h-[45vh] max-md:border-r-0 max-md:border-b"
-      style={{ width }}
+      className={`flex h-screen shrink-0 flex-col overflow-hidden border-slate-800 border-r bg-slate-950 max-md:h-auto max-md:max-h-[45vh] max-md:border-r-0 max-md:border-b ${
+        collapsed ? "pointer-events-none opacity-0" : "opacity-100"
+      }`}
+      style={{
+        width: collapsed ? 0 : width,
+        transition: animatingCollapse
+          ? "width 260ms cubic-bezier(0.4,0,0.2,1), opacity 200ms ease-out"
+          : "opacity 200ms ease-out"
+      }}
+      aria-hidden={collapsed}
     >
+    <div className="flex-1 overflow-y-auto px-3 py-5">
       <div className="mb-8 flex items-center gap-3">
         <div className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 font-extrabold text-white">
           P
@@ -308,7 +297,50 @@ export function Sidebar({
               )
         })}
       </section>
+    </div>
+
+    {onOpenSettings !== undefined && (
+      <button
+        type="button"
+        onClick={onOpenSettings}
+        title="Perfil y ajustes"
+        aria-label="Abrir ajustes de perfil"
+        className="group flex items-center gap-3 border-slate-800 border-t bg-slate-950 px-4 py-3 text-left transition hover:bg-slate-900"
+      >
+        <div className="grid size-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-sky-500 to-indigo-600 font-bold text-white text-sm ring-2 ring-transparent transition group-hover:ring-sky-400/50">
+          {initials}
+        </div>
+        <div className="min-w-0 flex-1">
+          <span className="block truncate font-semibold text-slate-100 text-sm">{displayName}</span>
+          <span className="block text-slate-400 text-xs transition group-hover:text-slate-300">Perfil · Accesibilidad</span>
+        </div>
+        <span className="grid size-8 shrink-0 place-items-center rounded-full bg-slate-900 text-slate-500 ring-1 ring-slate-800 transition group-hover:rotate-90 group-hover:bg-sky-500/15 group-hover:text-sky-300 group-hover:ring-sky-400/60">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} className="size-4" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 0 0-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 0 0-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 0 0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 0 0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 0 0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065Z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+          </svg>
+        </span>
+      </button>
+    )}
     </aside>
+
+    {onToggleCollapse !== undefined && (
+      <button
+        type="button"
+        onClick={onToggleCollapse}
+        title="Mostrar barra lateral"
+        aria-label="Mostrar barra lateral"
+        className={`fixed top-4 left-4 z-40 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/90 text-slate-300 shadow-lg backdrop-blur transition-all duration-200 hover:border-sky-400 hover:bg-slate-800 hover:text-sky-300 ${
+          collapsed
+            ? "pointer-events-auto scale-100 opacity-100 delay-150"
+            : "pointer-events-none -translate-x-3 scale-90 opacity-0"
+        }`}
+      >
+        <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+    )}
 
     {deletingAssignment !== null && createPortal(
       <div
