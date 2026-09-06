@@ -19,6 +19,9 @@ import {
 import type { Assignment } from "./domain/assignments/types.ts";
 import { clearAll, loadMode, loadProfile, saveMode } from "./domain/personality/storage.ts";
 import type { Profile, UserMode } from "./domain/personality/types.ts";
+import { precomputeMaterials } from "./domain/precompute/service.ts";
+import { clearAll as clearPrecomputeAll } from "./domain/precompute/storage.ts";
+import { clearDeck } from "./domain/precompute/srs.ts";
 
 // ── Layout constants ──
 const MOBILE_BREAKPOINT = 768;
@@ -105,6 +108,14 @@ export function App() {
     if (isMobile) setSidebarCollapsed(true);
   }, [isMobile]);
 
+  // Backfill precompute for any material without cached analysis (mount + on assignment changes).
+  // precomputeMaterial is idempotent + deduped, so calling it on every render is safe.
+  useEffect(() => {
+    for (const assignment of assignments) {
+      precomputeMaterials(assignment.materials);
+    }
+  }, [assignments]);
+
   const artifactVisible = selectedArtifactId !== null && !isMobile;
   const pdfPanelVisible = !isMobile && selectedMaterialId !== null && currentMaterials.length > 0 && selectedArtifactId === null;
 
@@ -152,7 +163,15 @@ export function App() {
     onSelectAssignment: selectAssignment,
     onOpenCreateAssignment: () => setShowCreateModal(true),
     onDeleteAssignment: (id: string) => {
+      const target = assignments.find((a) => a.id === id);
       clearMessages(id);
+      // Purge per-material caches for this assignment
+      if (target !== undefined) {
+        for (const material of target.materials) {
+          clearPrecomputeAll(material.id);
+          clearDeck(material.id);
+        }
+      }
       updateAssignments(assignments.filter((a) => a.id !== id));
       if (currentAssignmentId === id) selectAssignment(null);
     },

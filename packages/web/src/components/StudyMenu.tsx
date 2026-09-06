@@ -2,7 +2,11 @@ import { useState } from "react";
 import type { Assignment, Material } from "../domain/assignments/types.ts";
 import type { Profile } from "../domain/personality/types.ts";
 import { COLOR_GRADIENT, COLOR_LABEL, COLOR_METHODS } from "../domain/personality/types.ts";
+import { getStrategy } from "../domain/personality/strategy.ts";
+import { usePrecomputeAnalysis, usePrecomputeStatus } from "../domain/precompute/hooks.ts";
+import { precomputeMaterial } from "../domain/precompute/service.ts";
 import { PdfPreviewModal } from "./PdfPreviewModal.tsx";
+import { ReviewQueue } from "./ReviewQueue.tsx";
 
 
 interface StudyOption {
@@ -58,6 +62,7 @@ interface Props {
   readonly onPick: (prompt: string) => void;
   readonly onOpenCreateAssignment?: () => void;
   readonly onOpenMaterialPreview?: (materialId: string) => void;
+  readonly onStartSession?: (materialId: string, questionIds?: ReadonlyArray<string>) => void;
 }
 
 function formatSize(bytes: number): string {
@@ -66,9 +71,11 @@ function formatSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function StudyMenu({ profile, currentAssignment = null, hasAssignments = true, onPick, onOpenCreateAssignment, onOpenMaterialPreview }: Props) {
+export function StudyMenu({ profile, currentAssignment = null, hasAssignments = true, onPick, onOpenCreateAssignment, onOpenMaterialPreview, onStartSession }: Props) {
   const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
+
+  const strategy = getStrategy(profile);
 
   const openMaterial = (material: Material) => {
     if (onOpenMaterialPreview !== undefined) {
@@ -87,6 +94,7 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
     : activeTag === null
       ? currentAssignment.materials
       : currentAssignment.materials.filter((material) => material.tags.includes(activeTag));
+
   const greeting = currentAssignment !== null
     ? `Ready to work on ${currentAssignment.title}?`
     : profile !== null
@@ -96,7 +104,7 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
   const subtitle = currentAssignment !== null
     ? currentAssignment.description.length > 0
       ? currentAssignment.description
-      : "Pick a study method below, or type your own question."
+      : strategy.tagline
     : hasAssignments
       ? "Pick an assignment above to scope the session, then choose a method."
       : "Create an assignment above to get started. Each one keeps its own materials and progress.";
@@ -171,33 +179,13 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
 
           <ul className="mt-3 grid gap-1.5">
             {filteredMaterials.map((material) => (
-              <li key={material.id}>
-                <button
-                  type="button"
-                  onClick={() => openMaterial(material)}
-                  className="flex w-full items-start justify-between gap-3 rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2 text-left transition hover:border-sky-400 focus-visible:border-sky-400 focus-visible:outline-none"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-slate-100 text-sm">{material.name}</p>
-                    {material.tags.length > 0 && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {material.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="rounded-full bg-slate-800 px-1.5 py-0.5 text-slate-400 text-[10px]"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  <span className="flex shrink-0 items-center gap-3">
-                    <span className="text-slate-500 text-xs">{formatSize(material.sizeBytes)}</span>
-                    <span className="text-sky-400 text-xs">Preview →</span>
-                  </span>
-                </button>
-              </li>
+              <MaterialRow
+                key={material.id}
+                material={material}
+                onPreview={() => openMaterial(material)}
+                ctaLabel={strategy.ctaLabel}
+                {...(onStartSession !== undefined ? { onStartSession: () => onStartSession(material.id) } : {})}
+              />
             ))}
           </ul>
 
@@ -207,22 +195,35 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
         </section>
       )}
 
+      {/* ── Learn actively ── */}
+      {currentAssignment !== null && currentAssignment.materials.length > 0 && onStartSession !== undefined && (
+        <section className="mt-6 grid gap-3">
+          <ReviewQueue
+            materials={currentAssignment.materials}
+            onStartReview={(materialId, questionIds) => onStartSession(materialId, questionIds)}
+          />
+        </section>
+      )}
+
       {previewMaterial !== null && (
         <PdfPreviewModal material={previewMaterial} onClose={() => setPreviewMaterial(null)} />
       )}
 
-      <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {CORE_OPTIONS.map((option) => (
-          <button
-            key={option.id}
-            type="button"
-            onClick={() => onPick(option.prompt)}
-            className="group flex flex-col items-start gap-1.5 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 text-left transition hover:border-sky-400 hover:bg-slate-900 focus-visible:border-sky-400 focus-visible:outline-none"
-          >
-            <span className="font-semibold text-slate-100">{option.title}</span>
-            <span className="text-sm text-slate-400">{option.description}</span>
-          </button>
-        ))}
+      <div className="mt-8 grid gap-2">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Quick chat</h3>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {CORE_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onPick(option.prompt)}
+              className="group flex flex-col items-start gap-1.5 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 text-left transition hover:border-sky-400 hover:bg-slate-900 focus-visible:border-sky-400 focus-visible:outline-none"
+            >
+              <span className="font-semibold text-slate-100">{option.title}</span>
+              <span className="text-sm text-slate-400">{option.description}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {profile !== null && (
@@ -248,5 +249,95 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
         </section>
       )}
     </div>
+  );
+}
+
+/* ── Material row with precompute badge + start-session button ── */
+
+interface MaterialRowProps {
+  readonly material: Material;
+  readonly onPreview: () => void;
+  readonly onStartSession?: () => void;
+  readonly ctaLabel: string;
+}
+
+function MaterialRow({ material, onPreview, onStartSession, ctaLabel }: MaterialRowProps) {
+  const status = usePrecomputeStatus(material.id);
+  const analysis = usePrecomputeAnalysis(material.id);
+  const questionCount = analysis?.questions.length ?? 0;
+
+  return (
+    <li className="grid gap-2 rounded-lg border border-slate-800 bg-slate-900/50 px-3 py-2">
+      <div className="flex items-start justify-between gap-3">
+        <button
+          type="button"
+          onClick={onPreview}
+          className="min-w-0 flex-1 text-left"
+        >
+          <p className="truncate text-slate-100 text-sm hover:underline">{material.name}</p>
+          {material.tags.length > 0 && (
+            <div className="mt-1 flex flex-wrap gap-1">
+              {material.tags.map((tag) => (
+                <span key={tag} className="rounded-full bg-slate-800 px-1.5 py-0.5 text-slate-400 text-[10px]">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </button>
+        <span className="flex shrink-0 items-center gap-2">
+          <span className="text-slate-500 text-xs">{formatSize(material.sizeBytes)}</span>
+          <StatusBadge status={status.kind} onRetry={() => precomputeMaterial(material, { force: true })} />
+        </span>
+      </div>
+
+      {onStartSession !== undefined && status.kind === "ready" && questionCount > 0 && (
+        <div className="flex items-center justify-between border-slate-800 border-t pt-2">
+          <span className="text-slate-500 text-xs">{questionCount} conceptual questions ready</span>
+          <button
+            type="button"
+            onClick={onStartSession}
+            className="rounded-full bg-sky-500 px-3 py-1 font-semibold text-slate-950 text-xs transition hover:bg-sky-400"
+          >
+            {ctaLabel} →
+          </button>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function StatusBadge({ status, onRetry }: { status: "idle" | "running" | "ready" | "failed"; onRetry: () => void }) {
+  if (status === "ready") {
+    return <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 font-semibold text-emerald-300 text-[10px] uppercase">Ready</span>;
+  }
+  if (status === "running") {
+    return (
+      <span className="flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 font-semibold text-sky-300 text-[10px] uppercase">
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-300" />
+        Analyzing
+      </span>
+    );
+  }
+  if (status === "failed") {
+    return (
+      <button
+        type="button"
+        onClick={onRetry}
+        title="Retry analysis"
+        className="rounded-full bg-rose-500/15 px-2 py-0.5 font-semibold text-rose-300 text-[10px] uppercase hover:bg-rose-500/25"
+      >
+        Retry
+      </button>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onRetry}
+      className="rounded-full bg-slate-800 px-2 py-0.5 font-semibold text-slate-400 text-[10px] uppercase hover:bg-slate-700"
+    >
+      Analyze
+    </button>
   );
 }

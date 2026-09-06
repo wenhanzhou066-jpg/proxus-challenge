@@ -1,6 +1,6 @@
 import { useAtomRefresh } from "@effect/atom-react";
-import type { AgentMessage } from "@proxus/shared";
-import { useEffect, useRef, useState } from "react";
+import type { AgentMessage, ConceptualQuestion, MaterialAnalysis } from "@proxus/shared";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
 import { artifactsQuery } from "../domain/artifacts/atoms.ts";
@@ -8,9 +8,12 @@ import { materialsQuery } from "../domain/materials/atoms.ts";
 import { applyInvalidations, invalidationsForToolCall } from "../domain/tutor/invalidation.ts";
 import { streamTutorMessage } from "../domain/tutor/stream.ts";
 import { clearMessages, loadMessages, saveMessages } from "../domain/assignments/storage.ts";
-import type { Assignment } from "../domain/assignments/types.ts";
+import type { Assignment, Material } from "../domain/assignments/types.ts";
+import { getStrategy } from "../domain/personality/strategy.ts";
 import type { Profile } from "../domain/personality/types.ts";
+import { loadAnalysis } from "../domain/precompute/storage.ts";
 import { StudyMenu } from "./StudyMenu.tsx";
+import { StudySession } from "./StudySession.tsx";
 
 interface ChatProps {
   readonly profile?: Profile | null;
@@ -40,6 +43,30 @@ export function Chat({
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const [activeSession, setActiveSession] = useState<{
+    material: Material;
+    questions: ReadonlyArray<ConceptualQuestion>;
+  } | null>(null);
+
+  const strategy = useMemo(() => getStrategy(profile), [profile]);
+
+  // End active session when switching assignments
+  useEffect(() => {
+    setActiveSession(null);
+  }, [assignmentKey]);
+
+  const startSession = (materialId: string, questionIds?: ReadonlyArray<string>) => {
+    if (currentAssignment === null) return;
+    const material = currentAssignment.materials.find((m) => m.id === materialId);
+    if (material === undefined) return;
+    const analysis: MaterialAnalysis | null = loadAnalysis(materialId);
+    if (analysis === null) return;
+    const questions = questionIds === undefined
+      ? analysis.questions
+      : analysis.questions.filter((q) => questionIds.includes(q.id));
+    if (questions.length === 0) return;
+    setActiveSession({ material, questions });
+  };
 
   useEffect(() => {
     if (assignmentKey === null) {
@@ -167,16 +194,34 @@ export function Chat({
       </header>
 
       <section className="flex flex-col gap-4 overflow-y-auto p-6" aria-live="polite">
-        {messages.length === 0
-          ? <StudyMenu
-              profile={profile}
-              currentAssignment={currentAssignment}
-              hasAssignments={assignments.length > 0}
-              onPick={(prompt) => void submit(prompt)}
-              {...(onOpenCreateAssignment !== undefined ? { onOpenCreateAssignment } : {})}
-              {...(onOpenMaterialPreview !== undefined ? { onOpenMaterialPreview } : {})}
+        {activeSession !== null
+          ? <StudySession
+              materialId={activeSession.material.id}
+              materialName={activeSession.material.name}
+              questions={activeSession.questions}
+              strategy={strategy}
+              onEscape={(question, userAttempt) => {
+                const attemptSection = userAttempt.trim().length > 0
+                  ? `\n\nHere's what I tried: ${userAttempt.trim()}`
+                  : "";
+                setInput(
+                  `I'm stuck on this question about "${activeSession.material.name}":\n\n> ${question.prompt}${attemptSection}\n\nDon't just give me the answer — walk me through how to think about it.`
+                );
+                setActiveSession(null);
+              }}
+              onExit={() => setActiveSession(null)}
             />
-          : messages.map((message, index) => <MessageBubble key={index} message={message} />)}
+          : messages.length === 0
+            ? <StudyMenu
+                profile={profile}
+                currentAssignment={currentAssignment}
+                hasAssignments={assignments.length > 0}
+                onPick={(prompt) => void submit(prompt)}
+                onStartSession={startSession}
+                {...(onOpenCreateAssignment !== undefined ? { onOpenCreateAssignment } : {})}
+                {...(onOpenMaterialPreview !== undefined ? { onOpenMaterialPreview } : {})}
+              />
+            : messages.map((message, index) => <MessageBubble key={index} message={message} />)}
       </section>
 
       {error === undefined ? null : <p className="m-0 px-6 pb-3 text-red-200">{error}</p>}
