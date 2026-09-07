@@ -110,7 +110,8 @@ function execute(
 
       if (response.toolResults.length === 0) {
         console.log(`[session] step ${step} ending — text:`, response.text.slice(0, 200));
-        const output = response.text.length > 0 ? response.text : lastToolResult;
+        const raw = response.text.length > 0 ? response.text : lastToolResult;
+        const output = sanitizeAssistantText(raw);
         yield* appendMessage(AgentMessage.assistant(output));
         return {
           output,
@@ -138,7 +139,7 @@ function execute(
 const modelErrorResponse = (error: unknown): LanguageModel.GenerateTextResponse<AgentToolkit["tools"]> =>
   new LanguageModel.GenerateTextResponse([
     Response.makePart("text", {
-      text: `I hit an internal model/tool-routing error, so I stopped this turn safely instead of crashing the app.\n\n${formatAgentError(error)}`
+      text: friendlyModelError(formatAgentError(error))
     })
   ]);
 
@@ -148,6 +149,48 @@ const formatAgentError = (error: unknown) => {
   }
 
   return String(error);
+};
+
+const QUOTA_RE = /429|quota|rate.?limit|RESOURCE_EXHAUSTED|too many requests/i;
+const OVERLOAD_RE = /503|UNAVAILABLE|high demand|overload/i;
+
+/**
+ * The model sometimes narrates its own tool-call history back to the user
+ * (e.g. "(Historial: en un turno anterior invoqué la función cli vía function-calling.)").
+ * That's an internals leak — the user does not care. Detect and replace.
+ */
+const META_NARRATION_PATTERNS: readonly RegExp[] = [
+  /^\s*\(?Historial\s*:/i,
+  /^\s*\(?History\s*:/i,
+  /function.?calling/i,
+  /he\s+invocado\s+la\s+funci[oó]n/i,
+  /he\s+llamado\s+a\s+la\s+funci[oó]n/i,
+  /invoked\s+the\s+(cli|tool|function)/i,
+  /en\s+un\s+turno\s+anterior/i,
+  /internal\s+model\/tool.?routing/i
+];
+
+const FALLBACK_MESSAGE = "Listo. ¿Quieres que profundicemos en algo o pasamos al siguiente tema?";
+
+function sanitizeAssistantText(raw: string): string {
+  const trimmed = raw.trim();
+  if (trimmed.length === 0) return FALLBACK_MESSAGE;
+  const isMetaLeak = META_NARRATION_PATTERNS.some((re) => re.test(trimmed));
+  if (isMetaLeak) {
+    console.log("[session] filtered meta-narration from assistant text:", trimmed.slice(0, 120));
+    return FALLBACK_MESSAGE;
+  }
+  return raw;
+}
+
+const friendlyModelError = (raw: string): string => {
+  if (QUOTA_RE.test(raw)) {
+    return "Has alcanzado tu uso diario del tutor. Inténtalo de nuevo más tarde.";
+  }
+  if (OVERLOAD_RE.test(raw)) {
+    return "El tutor está temporalmente saturado. Inténtalo de nuevo en unos segundos.";
+  }
+  return "No he podido completar la respuesta. Inténtalo de nuevo o reformula la pregunta.";
 };
 
 const renderPrompt = (

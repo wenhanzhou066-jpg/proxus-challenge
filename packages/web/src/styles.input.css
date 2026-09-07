@@ -113,3 +113,18 @@
 @utility btn-sm { height: var(--btn-sm); width: var(--btn-sm); }
 @utility btn-md { height: var(--btn-md); width: var(--btn-md); }
 @utility btn-lg { height: var(--btn-lg); width: var(--btn-lg); }
+
+@layer components {
+  .thinking-dot {
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background-color: var(--text-secondary);
+    animation: thinking-bounce 1s infinite ease-in-out;
+    display: inline-block;
+  }
+  @keyframes thinking-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-3px); opacity: 1; }
+  }
+}

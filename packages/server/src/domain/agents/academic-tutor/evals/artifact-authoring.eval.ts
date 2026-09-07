@@ -29,7 +29,8 @@ const EvalCaseId = Schema.String;
 const ArtifactKind = Schema.Union([
   Schema.Literal("note"),
   Schema.Literal("quiz"),
-  Schema.Literal("test")
+  Schema.Literal("test"),
+  Schema.Literal("diagram")
 ]);
 
 const CriterionStatus = Schema.Union([
@@ -39,7 +40,14 @@ const CriterionStatus = Schema.Union([
 
 const ArtifactAuthoringExpected = Schema.Struct({
   artifactKind: ArtifactKind,
-  questionCount: Schema.optional(Schema.Number)
+  questionCount: Schema.optional(Schema.Number),
+  minNodes: Schema.optional(Schema.Number),
+  maxNodes: Schema.optional(Schema.Number),
+  layout: Schema.optional(Schema.Union([
+    Schema.Literal("flowchart"),
+    Schema.Literal("mindmap"),
+    Schema.Literal("concept-map")
+  ]))
 });
 type ArtifactAuthoringExpected = typeof ArtifactAuthoringExpected.Type;
 
@@ -241,7 +249,8 @@ const InMemoryArtifactRepository = Layer.effect(
       saveAttempt,
       getAttempt,
       listAttempts,
-      gradeAttempt: gradeSavedAttempt
+      gradeAttempt: gradeSavedAttempt,
+      deleteArtifact: () => Effect.void
     });
   })
 ).pipe(Layer.provideMerge(ArtifactRepositoryTestRef.layer));
@@ -308,8 +317,8 @@ const shouldCreateExpectedArtifact = (): AcceptanceCriterion => ({
     }
 
     if (expected.questionCount !== undefined) {
-      if (artifact.kind === "note") {
-        return failed("should-create-expected-artifact", "Expected questionCount but created a note.", artifact);
+      if (artifact.kind === "note" || artifact.kind === "diagram") {
+        return failed("should-create-expected-artifact", `Expected questionCount but created a ${artifact.kind}.`, artifact);
       }
 
       if (artifact.questions.length !== expected.questionCount) {
@@ -321,7 +330,129 @@ const shouldCreateExpectedArtifact = (): AcceptanceCriterion => ({
       }
     }
 
+    if (artifact.kind === "diagram") {
+      if (expected.minNodes !== undefined && artifact.nodes.length < expected.minNodes) {
+        return failed(
+          "should-create-expected-artifact",
+          `Expected at least ${expected.minNodes} nodes, got ${artifact.nodes.length}.`,
+          artifact
+        );
+      }
+      if (expected.maxNodes !== undefined && artifact.nodes.length > expected.maxNodes) {
+        return failed(
+          "should-create-expected-artifact",
+          `Expected at most ${expected.maxNodes} nodes, got ${artifact.nodes.length}.`,
+          artifact
+        );
+      }
+      if (expected.layout !== undefined && artifact.layout !== expected.layout) {
+        return failed(
+          "should-create-expected-artifact",
+          `Expected layout ${expected.layout}, got ${artifact.layout}.`,
+          artifact
+        );
+      }
+    }
+
     return passed("should-create-expected-artifact", `Created expected ${artifact.kind} artifact ${artifact.id}.`, artifact);
+  })
+});
+
+const shouldHaveExactlyOneDiagramRoot = (): AcceptanceCriterion => ({
+  id: "diagram-should-have-exactly-one-root",
+  evaluate: (context) => Effect.gen(function* () {
+    const ref = yield* ArtifactRepositoryTestRef;
+    const state = yield* Ref.get(ref);
+    const artifact = state.artifacts.at(-1);
+    if (artifact === undefined || artifact.kind !== "diagram") {
+      return passed("diagram-should-have-exactly-one-root", "Not a diagram — skipped.");
+    }
+    const inDegree = new Map<string, number>();
+    for (const n of artifact.nodes) inDegree.set(n.id, 0);
+    for (const e of artifact.edges) inDegree.set(e.target, (inDegree.get(e.target) ?? 0) + 1);
+    const roots = artifact.nodes.filter((n) => (inDegree.get(n.id) ?? 0) === 0);
+    return roots.length === 1
+      ? passed("diagram-should-have-exactly-one-root", `1 root: ${roots[0]!.label}.`)
+      : failed(
+          "diagram-should-have-exactly-one-root",
+          `Expected exactly 1 root node (no incoming edges), got ${roots.length}.`,
+          { roots: roots.map((r) => r.label) }
+        );
+  })
+});
+
+const shouldHaveNoCycles = (): AcceptanceCriterion => ({
+  id: "diagram-should-have-no-cycles",
+  evaluate: (context) => Effect.gen(function* () {
+    const ref = yield* ArtifactRepositoryTestRef;
+    const state = yield* Ref.get(ref);
+    const artifact = state.artifacts.at(-1);
+    if (artifact === undefined || artifact.kind !== "diagram") {
+      return passed("diagram-should-have-no-cycles", "Not a diagram — skipped.");
+    }
+    const adj = new Map<string, string[]>();
+    for (const n of artifact.nodes) adj.set(n.id, []);
+    for (const e of artifact.edges) adj.get(e.source)?.push(e.target);
+    const WHITE = 0, GRAY = 1, BLACK = 2;
+    const color = new Map<string, number>();
+    for (const n of artifact.nodes) color.set(n.id, WHITE);
+    const hasCycle = (node: string): boolean => {
+      color.set(node, GRAY);
+      for (const next of adj.get(node) ?? []) {
+        const c = color.get(next);
+        if (c === GRAY) return true;
+        if (c === WHITE && hasCycle(next)) return true;
+      }
+      color.set(node, BLACK);
+      return false;
+    };
+    for (const n of artifact.nodes) {
+      if (color.get(n.id) === WHITE && hasCycle(n.id)) {
+        return failed("diagram-should-have-no-cycles", "Cycle detected in diagram.", { edges: artifact.edges });
+      }
+    }
+    return passed("diagram-should-have-no-cycles", "No cycles found.");
+  })
+});
+
+const shouldLabelAllDiagramEdges = (): AcceptanceCriterion => ({
+  id: "diagram-should-label-all-edges",
+  evaluate: (context) => Effect.gen(function* () {
+    const ref = yield* ArtifactRepositoryTestRef;
+    const state = yield* Ref.get(ref);
+    const artifact = state.artifacts.at(-1);
+    if (artifact === undefined || artifact.kind !== "diagram") {
+      return passed("diagram-should-label-all-edges", "Not a diagram — skipped.");
+    }
+    const unlabeled = artifact.edges.filter((e) => e.label === undefined || e.label.trim().length === 0);
+    return unlabeled.length === 0
+      ? passed("diagram-should-label-all-edges", `All ${artifact.edges.length} edges labeled.`)
+      : failed(
+          "diagram-should-label-all-edges",
+          `${unlabeled.length}/${artifact.edges.length} edges missing labels.`,
+          { unlabeled }
+        );
+  })
+});
+
+const shouldReferenceExistingNodes = (): AcceptanceCriterion => ({
+  id: "diagram-edges-reference-existing-nodes",
+  evaluate: (context) => Effect.gen(function* () {
+    const ref = yield* ArtifactRepositoryTestRef;
+    const state = yield* Ref.get(ref);
+    const artifact = state.artifacts.at(-1);
+    if (artifact === undefined || artifact.kind !== "diagram") {
+      return passed("diagram-edges-reference-existing-nodes", "Not a diagram — skipped.");
+    }
+    const ids = new Set(artifact.nodes.map((n) => n.id));
+    const broken = artifact.edges.filter((e) => !ids.has(e.source) || !ids.has(e.target));
+    return broken.length === 0
+      ? passed("diagram-edges-reference-existing-nodes", "All edges reference existing nodes.")
+      : failed(
+          "diagram-edges-reference-existing-nodes",
+          `${broken.length} edges reference missing nodes.`,
+          { broken }
+        );
   })
 });
 
@@ -384,6 +515,30 @@ const dataset = ArtifactAuthoringEvalDataset.make({
       input: "Crea un test de 2 preguntas sobre límites. Persiste el test con artifacts create.",
       expected: { artifactKind: "test", questionCount: 2 },
       maxSteps: 8
+    },
+    {
+      id: "esquema-routes-to-diagram",
+      input: "Hazme un esquema con los conceptos principales de la programación orientada a objetos: clase, objeto, herencia, encapsulación y polimorfismo. Persístelo con artifacts create.",
+      expected: { artifactKind: "diagram", minNodes: 4, maxNodes: 12 },
+      maxSteps: 8
+    },
+    {
+      id: "mapa-mental-routes-to-mindmap",
+      input: "Crea un mapa mental de las estructuras de datos básicas: arrays, listas, pilas, colas y árboles. Persístelo con artifacts create.",
+      expected: { artifactKind: "diagram", minNodes: 4, maxNodes: 12, layout: "mindmap" },
+      maxSteps: 8
+    },
+    {
+      id: "diagrama-flujo-routes-to-flowchart",
+      input: "Crea un diagrama de flujo del ciclo de vida de una petición HTTP: DNS, TCP, TLS, HTTP request, HTTP response. Persístelo con artifacts create y usa layout flowchart.",
+      expected: { artifactKind: "diagram", minNodes: 4, maxNodes: 10, layout: "flowchart" },
+      maxSteps: 8
+    },
+    {
+      id: "resumen-does-not-route-to-diagram",
+      input: "Hazme un resumen corto en markdown sobre la regla de la cadena en cálculo. Persístelo con artifacts create.",
+      expected: { artifactKind: "note" },
+      maxSteps: 8
     }
   ]
 });
@@ -391,7 +546,11 @@ const dataset = ArtifactAuthoringEvalDataset.make({
 const criteria = [
   shouldCreateExpectedArtifact(),
   shouldMentionCreatedArtifact(),
-  shouldNotHaveToolFailures()
+  shouldNotHaveToolFailures(),
+  shouldHaveExactlyOneDiagramRoot(),
+  shouldHaveNoCycles(),
+  shouldLabelAllDiagramEdges(),
+  shouldReferenceExistingNodes()
 ] as const;
 
 const runEvalCase = (

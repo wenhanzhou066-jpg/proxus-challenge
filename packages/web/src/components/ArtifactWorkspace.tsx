@@ -16,6 +16,7 @@ import { artifactQuery, submitArtifactAttemptAction } from "../domain/artifacts/
 import { useSettings } from "../domain/settings/hooks.ts";
 import { getFeedbackPalette } from "../domain/settings/feedback.ts";
 import { FeedbackBadge } from "./FeedbackBadge.tsx";
+import { DiagramViewer } from "./DiagramViewer.tsx";
 
 type Answers = Record<string, string>;
 
@@ -38,8 +39,8 @@ function EmptyWorkspace() {
       <div className="grid h-full place-items-center rounded-3xl border border-dashed border-slate-800 bg-slate-900/40 p-8 text-center">
         <div>
           <p className="mb-2 font-bold text-sky-400 text-xs uppercase tracking-widest">Espacio de práctica</p>
-          <h2 className="text-balance font-bold text-3xl text-slate-100">Selecciona una nota, cuestionario o examen en la barra lateral.</h2>
-          <p className="mt-3 max-w-xl text-slate-400">Los cuestionarios y exámenes se pueden resolver directamente aquí. El chat del tutor sigue disponible para pistas y explicaciones.</p>
+          <h2 className="text-balance font-bold text-3xl text-slate-100">Selecciona una nota, cuestionario, examen o diagrama en la barra lateral.</h2>
+          <p className="mt-3 max-w-xl text-slate-400">Los cuestionarios y exámenes se pueden resolver directamente aquí, y los diagramas son interactivos. El chat del tutor sigue disponible para pistas y explicaciones.</p>
         </div>
       </div>
     </main>
@@ -77,6 +78,8 @@ function ArtifactContent({ artifact }: { readonly artifact: Artifact }) {
   switch (artifact.kind) {
     case "note":
       return <NoteViewer artifact={artifact} />;
+    case "diagram":
+      return <DiagramViewer artifact={artifact} />;
     case "quiz":
     case "test":
       return <ExerciseSolver artifact={artifact} />;

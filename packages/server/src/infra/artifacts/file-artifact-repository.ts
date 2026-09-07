@@ -154,6 +154,19 @@ export const FileArtifactRepository = {
       return graded;
     });
 
+    const deleteArtifact = (id: string): Effect.Effect<void, ArtifactRepositoryError> => Effect.gen(function* () {
+      const filePath = artifactPath(id);
+      const exists = yield* fs.exists(filePath).pipe(Effect.mapError(mapStorageError));
+      if (!exists) {
+        return yield* new ArtifactNotFound({ artifactId: id });
+      }
+      yield* fs.remove(filePath).pipe(Effect.mapError(mapStorageError));
+      const attempts = yield* listAttempts(id);
+      for (const attempt of attempts) {
+        yield* fs.remove(attemptPath(attempt.id)).pipe(Effect.mapError(mapStorageError));
+      }
+    });
+
     return {
       createArtifact,
       saveArtifact: writeArtifactFile,
@@ -163,7 +176,8 @@ export const FileArtifactRepository = {
       saveAttempt: writeAttemptFile,
       getAttempt: readAttemptFile,
       listAttempts,
-      gradeAttempt: gradeAttemptById
+      gradeAttempt: gradeAttemptById,
+      deleteArtifact
     };
   }),
   layer: (directory: string) => Layer.effect(ArtifactRepository)(FileArtifactRepository.make(directory))

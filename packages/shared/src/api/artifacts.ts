@@ -6,9 +6,15 @@ const ArtifactKindQuery = Schema.Struct({
   kind: Schema.optional(Schema.Union([
     Schema.Literal("note"),
     Schema.Literal("quiz"),
-    Schema.Literal("test")
+    Schema.Literal("test"),
+    Schema.Literal("diagram")
   ]))
 });
+
+export const RenameArtifactInput = Schema.Struct({
+  title: Schema.String
+});
+export type RenameArtifactInput = typeof RenameArtifactInput.Type;
 
 export class ArtifactsApi extends HttpApiGroup.make("artifacts")
   .add(
@@ -28,6 +34,19 @@ export class ArtifactsApi extends HttpApiGroup.make("artifacts")
       },
       payload: SubmitAttemptInput,
       success: ArtifactAttempt
+    }),
+    HttpApiEndpoint.patch("rename", "/:id", {
+      params: {
+        id: Schema.String
+      },
+      payload: RenameArtifactInput,
+      success: Artifact
+    }),
+    HttpApiEndpoint.make("DELETE")("delete", "/:id", {
+      params: {
+        id: Schema.String
+      },
+      success: Schema.Struct({ id: Schema.String })
     })
   )
   .prefix("/artifacts")

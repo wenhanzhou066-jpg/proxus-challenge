@@ -227,7 +227,18 @@ export function App() {
 
   const modals = (
     <>
-    {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+    {showSettings && (
+      <SettingsModal
+        hasProfile={profile !== null}
+        onRetakeTest={() => {
+          clearAll();
+          setProfile(null);
+          setMode(null);
+          setShowSettings(false);
+        }}
+        onClose={() => setShowSettings(false)}
+      />
+    )}
     {showCreateModal && (
     <CreateAssignmentModal
       onClose={() => setShowCreateModal(false)}
@@ -264,7 +275,6 @@ export function App() {
       assignments={assignments}
       currentAssignment={currentAssignment}
       onOpenCreateAssignment={() => setShowCreateModal(true)}
-      onResetPreferences={() => { clearAll(); setProfile(null); setMode(null); }}
       onToggleSidebar={toggleSidebar}
       onOpenMaterialPreview={openMaterialPreview}
       sidebarCollapsed={sidebarCollapsed}

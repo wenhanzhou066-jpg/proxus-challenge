@@ -59,6 +59,17 @@ export const ArtifactsHttpHandlers = HttpApiBuilder.group(
       }).pipe(
         Effect.flatMap((attempt) => artifacts.gradeAttempt(attempt.id)),
         Effect.orDie
+      ))
+      .handle("rename", ({ params, payload }) => artifacts.getArtifact(params.id).pipe(
+        Effect.flatMap((artifact) => {
+          const renamed = { ...artifact, title: payload.title } as Artifact;
+          return artifacts.saveArtifact(renamed).pipe(Effect.as(renamed));
+        }),
+        Effect.orDie
+      ))
+      .handle("delete", ({ params }) => artifacts.deleteArtifact(params.id).pipe(
+        Effect.as({ id: params.id }),
+        Effect.orDie
       ));
   })
 );

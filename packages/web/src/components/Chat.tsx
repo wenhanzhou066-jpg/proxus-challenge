@@ -26,7 +26,6 @@ interface ChatProps {
   readonly assignments?: ReadonlyArray<Assignment>;
   readonly currentAssignment?: Assignment | null;
   readonly onOpenCreateAssignment?: () => void;
-  readonly onResetPreferences?: () => void;
   readonly onToggleSidebar?: () => void;
   readonly onOpenMaterialPreview?: (materialId: string) => void;
   readonly sidebarCollapsed?: boolean;
@@ -62,7 +61,6 @@ export function Chat({
   assignments = [],
   currentAssignment = null,
   onOpenCreateAssignment,
-  onResetPreferences,
   onToggleSidebar,
   onOpenMaterialPreview,
   sidebarCollapsed = false
@@ -81,7 +79,13 @@ export function Chat({
     questions: ReadonlyArray<ConceptualQuestion>;
   } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [typingIndex, setTypingIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    scrollAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length, isSending]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -156,14 +160,18 @@ export function Chat({
       for await (const event of streamTutorMessage({
         input: scopedInput(trimmed),
         messages,
-        maxSteps: 8
+        maxSteps: estimateMaxSteps(trimmed)
       })) {
         if (event.type === "done") {
           continue;
         }
 
         const message = event.message;
-        setMessages((current) => [...current, message]);
+        setMessages((current) => {
+          const next = [...current, message];
+          if (message.role === "assistant") setTypingIndex(next.length - 1);
+          return next;
+        });
 
         if (message.role === "tool-call") {
           pendingInvalidations.current.push(invalidationsForToolCall(message));
@@ -187,7 +195,8 @@ export function Chat({
 
       setInput("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      const raw = cause instanceof Error ? cause.message : String(cause);
+      setError(mapErrorMessage(raw));
     } finally {
       setIsSending(false);
     }
@@ -244,16 +253,6 @@ export function Chat({
               </span>
             </button>
           )}
-          {onResetPreferences !== undefined && (
-            <button
-              className="hidden h-9 items-center rounded-full border border-slate-700 px-4 text-slate-200 text-sm transition hover:border-sky-400 hover:bg-sky-500/10 hover:text-sky-200 sm:inline-flex"
-              type="button"
-              onClick={onResetPreferences}
-              title="Rehacer el test de personalidad"
-            >
-              Preferencias
-            </button>
-          )}
           <button
             className="inline-flex h-9 items-center rounded-full border border-slate-700 px-4 text-slate-200 text-sm transition hover:border-sky-400 hover:bg-sky-500/10 hover:text-sky-200 disabled:cursor-not-allowed disabled:opacity-50"
             type="button"
@@ -294,10 +293,38 @@ export function Chat({
                 {...(onOpenCreateAssignment !== undefined ? { onOpenCreateAssignment } : {})}
                 {...(onOpenMaterialPreview !== undefined ? { onOpenMaterialPreview } : {})}
               />
-            : messages.map((message, index) => <MessageBubble key={index} message={message} />)}
+            : (
+              <>
+                {messages.map((message, index) => (
+                  <MessageBubble
+                    key={index}
+                    message={message}
+                    animate={index === typingIndex}
+                    onAnimationDone={() => setTypingIndex((cur) => (cur === index ? null : cur))}
+                  />
+                ))}
+                {isSending && (messages.length === 0 || messages[messages.length - 1]?.role !== "assistant") && (
+                  <ThinkingBubble />
+                )}
+                <div ref={scrollAnchorRef} aria-hidden />
+              </>
+            )}
       </section>
 
-      {error === undefined ? null : <p className="m-0 px-6 pb-3 text-red-200">{error}</p>}
+      {error === undefined ? null : (
+        <div className="mx-6 mb-3">
+          <p
+            className={`m-0 rounded-xl border px-4 py-3 text-sm ${
+              isQuotaMessage(error)
+                ? "border-amber-500/40 bg-amber-500/10 text-amber-100"
+                : "border-rose-500/40 bg-rose-500/10 text-rose-100"
+            }`}
+            role="alert"
+          >
+            {error}
+          </p>
+        </div>
+      )}
 
       <form
         className="mx-auto w-full max-w-3xl border-slate-800 bg-slate-950/90 px-4 pt-3 pb-5"
@@ -357,28 +384,149 @@ function stripAssignmentScope(content: string): string {
   return content.replace(SCOPE_PREFIX, "");
 }
 
-const MessageBubble = memo(function MessageBubble({ message }: { readonly message: AgentMessage }) {
+const QUOTA_PATTERNS = [
+  /429/,
+  /quota/i,
+  /rate.?limit/i,
+  /RESOURCE_EXHAUSTED/,
+  /too many requests/i
+];
+const OVERLOAD_PATTERNS = [
+  /503/,
+  /UNAVAILABLE/,
+  /high demand/i,
+  /overload/i
+];
+
+const QUOTA_MESSAGE = "Has alcanzado tu uso diario del tutor. Inténtalo de nuevo más tarde.";
+const OVERLOAD_MESSAGE = "El tutor está temporalmente saturado. Inténtalo de nuevo en unos segundos.";
+
+function mapErrorMessage(raw: string): string {
+  if (QUOTA_PATTERNS.some((re) => re.test(raw))) return QUOTA_MESSAGE;
+  if (OVERLOAD_PATTERNS.some((re) => re.test(raw))) return OVERLOAD_MESSAGE;
+  return raw;
+}
+
+function isQuotaMessage(msg: string): boolean {
+  return msg === QUOTA_MESSAGE || msg === OVERLOAD_MESSAGE;
+}
+
+const ARTIFACT_INTENT = /\b(esquema|diagrama|diagram|mapa mental|mapa conceptual|flujo|grafo|quiz|cuestionario|test|examen|prueba|resumen|nota|apuntes|artefacto|art[ií]culo|preguntas r[aá]pidas|repaso|tarjetas?)\b/i;
+const MULTI_STEP_INTENT = /\b(analiza|analizar|estudia|planifica|planificar|prep[aá]rame|prep[aá]rate|inspecciona|revisa|repasa|elabora|genera)\b/i;
+
+/**
+ * Chat responses are conversational most of the time — 4 steps is plenty.
+ * Only bump to 8 when the user's request clearly requires tool use
+ * (creating an artifact) or multi-step reasoning over materials.
+ * Cuts perceived latency roughly in half for the common case.
+ */
+function estimateMaxSteps(input: string): number {
+  if (ARTIFACT_INTENT.test(input) || MULTI_STEP_INTENT.test(input)) return 8;
+  return 4;
+}
+
+/**
+ * Fake token-by-token reveal. Data arrives whole (server sends complete messages
+ * per stream event), so we can be generous with the pace. Short replies skip the
+ * animation entirely — the cost/benefit of watching a 30-char reply crawl is bad.
+ */
+function useTypewriter(fullText: string, active: boolean, onDone?: () => void) {
+  const shouldAnimate = active && fullText.length > 120;
+  const [revealed, setRevealed] = useState(shouldAnimate ? 0 : fullText.length);
+  const doneRef = useRef(false);
+
+  useEffect(() => {
+    if (!shouldAnimate) {
+      setRevealed(fullText.length);
+      onDone?.();
+      return;
+    }
+    doneRef.current = false;
+    setRevealed(0);
+    // ~800 chars/sec: fast enough that you never wait on the animation for a
+    // long reply, slow enough that you still perceive it as "streaming".
+    const cps = 800;
+    const startedAt = performance.now();
+    let raf = 0;
+    const tick = () => {
+      const elapsed = (performance.now() - startedAt) / 1000;
+      const next = Math.min(fullText.length, Math.floor(elapsed * cps));
+      setRevealed(next);
+      if (next >= fullText.length) {
+        if (!doneRef.current) {
+          doneRef.current = true;
+          onDone?.();
+        }
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [fullText, shouldAnimate, onDone]);
+
+  return shouldAnimate ? fullText.slice(0, revealed) : fullText;
+}
+
+function ThinkingBubble() {
+  return (
+    <article className="max-w-3xl self-start rounded-2xl border border-slate-800 bg-slate-900 p-4">
+      <div className="mb-2 flex items-center gap-3">
+        <span
+          className="block font-bold text-sky-400 text-xs uppercase tracking-wide"
+          style={{ fontFamily: "var(--font-brand)", letterSpacing: "0.14em" }}
+        >
+          PROXUS
+        </span>
+      </div>
+      <div className="flex items-center gap-2 text-slate-300 text-sm">
+        <span className="italic">Pensando</span>
+        <span className="inline-flex gap-0.5">
+          <span className="thinking-dot" />
+          <span className="thinking-dot [animation-delay:0.15s]" />
+          <span className="thinking-dot [animation-delay:0.3s]" />
+        </span>
+      </div>
+    </article>
+  );
+}
+
+const MessageBubble = memo(function MessageBubble({
+  message,
+  animate = false,
+  onAnimationDone
+}: {
+  readonly message: AgentMessage;
+  readonly animate?: boolean;
+  readonly onAnimationDone?: () => void;
+}) {
   if (message.role === "tool-call" || message.role === "tool-result") {
     return null;
   }
 
   const isAssistant = message.role === "assistant";
-  const displayContent = message.role === "user" ? stripAssignmentScope(message.content) : message.content;
+  const fullContent = message.role === "user" ? stripAssignmentScope(message.content) : message.content;
+  const displayContent = useTypewriter(fullContent, animate && isAssistant, onAnimationDone);
+  const isTyping = animate && isAssistant && displayContent.length < fullContent.length;
   return (
     <article className={message.role === "user"
       ? "max-w-3xl self-end rounded-2xl border border-blue-700 bg-blue-950 p-4"
       : "max-w-3xl self-start rounded-2xl border border-slate-800 bg-slate-900 p-4"}
     >
       <div className="mb-2 flex items-center justify-between gap-3">
-        <span className="block font-bold text-sky-400 text-xs uppercase tracking-wide">
-          {message.role === "user" ? "Tú" : "Tutor"}
+        <span
+          className="block font-bold text-sky-400 text-xs uppercase tracking-wide"
+          style={message.role === "user" ? undefined : { fontFamily: "var(--font-brand)", letterSpacing: "0.14em" }}
+        >
+          {message.role === "user" ? "Tú" : "PROXUS"}
         </span>
-        {isAssistant && displayContent.trim().length > 0 && (
-          <SpeakButton text={displayContent} />
+        {isAssistant && fullContent.trim().length > 0 && !isTyping && (
+          <SpeakButton text={fullContent} />
         )}
       </div>
       <div className="text-slate-100 leading-7">
         <Streamdown>{displayContent}</Streamdown>
+        {isTyping && <span className="ml-0.5 inline-block h-4 w-[3px] translate-y-0.5 animate-pulse bg-sky-400" aria-hidden />}
       </div>
     </article>
   );

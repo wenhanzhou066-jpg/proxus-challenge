@@ -46,3 +46,20 @@ export const submitArtifactAttemptAction = apiRuntime.fn(
     ).pipe(Effect.withSpan("artifacts.submit", { kind: "client" })),
   { reactivityKeys: ["artifacts"] }
 );
+
+export const renameArtifactAction = apiRuntime.fn(
+  (input: { id: string; title: string }) =>
+    ApiClient.use((client) => client.artifacts.rename({
+      params: { id: input.id },
+      payload: { title: input.title }
+    })).pipe(Effect.withSpan("artifacts.rename", { kind: "client" })),
+  { reactivityKeys: ["artifacts"] }
+);
+
+export const deleteArtifactAction = apiRuntime.fn(
+  (id: string) =>
+    ApiClient.use((client) => client.artifacts.delete({
+      params: { id }
+    })).pipe(Effect.withSpan("artifacts.delete", { kind: "client" })),
+  { reactivityKeys: ["artifacts"] }
+);

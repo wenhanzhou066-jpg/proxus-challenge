@@ -1,11 +1,12 @@
-import { useAtomValue } from "@effect/atom-react";
+import { useAtomSet, useAtomValue } from "@effect/atom-react";
 import { getArtifactAssignmentMap, subscribeArtifactScope } from "../domain/artifacts/scope.ts";
+import { deleteArtifactAction, renameArtifactAction } from "../domain/artifacts/atoms.ts";
+import { RowMenu } from "./RowMenu.tsx";
 import * as AsyncResult from "effect/unstable/reactivity/AsyncResult";
-import { CheckCircle2, ClipboardList, FileText, Folder, ListChecks, MoreHorizontal, PanelLeft, Plus, Settings, X } from "lucide-react";
+import { CheckCircle2, ClipboardList, FileText, Folder, ListChecks, MoreHorizontal, Network, PanelLeft, Plus, Settings, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { artifactsQuery } from "../domain/artifacts/atoms.ts";
-import { materialsQuery } from "../domain/materials/atoms.ts";
 import type { Assignment } from "../domain/assignments/types.ts";
 import { useSettings } from "../domain/settings/hooks.ts";
 
@@ -38,7 +39,6 @@ export function Sidebar({
   onToggleCollapse,
   onOpenSettings
 }: SidebarProps) {
-  const materials = useAtomValue(materialsQuery);
   const artifacts = useAtomValue(artifactsQuery);
   const [settings] = useSettings();
   const [animatingCollapse, setAnimatingCollapse] = useState(false);
@@ -57,7 +57,6 @@ export function Sidebar({
     .slice(0, 2)
     .toUpperCase() || "?";
   const showAssignments = onSelectAssignment !== undefined && onOpenCreateAssignment !== undefined;
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -75,17 +74,7 @@ export function Sidebar({
     if (renamingId !== null) renameRef.current?.focus();
   }, [renamingId]);
 
-  useEffect(() => {
-    if (openMenuId === null) return;
-    function close(e: MouseEvent) {
-      if (!(e.target as Element).closest("[data-assignment-menu]")) setOpenMenuId(null);
-    }
-    document.addEventListener("mousedown", close);
-    return () => document.removeEventListener("mousedown", close);
-  }, [openMenuId]);
-
   function startRename(assignment: Assignment) {
-    setOpenMenuId(null);
     setRenamingId(assignment.id);
     setRenameValue(assignment.title);
   }
@@ -199,7 +188,6 @@ export function Sidebar({
             <ul className="grid gap-0.5">
               {assignments.map((assignment) => {
                 const active = assignment.id === currentAssignmentId;
-                const menuOpen = openMenuId === assignment.id;
                 const isRenaming = renamingId === assignment.id;
                 return (
                   <li
@@ -245,49 +233,33 @@ export function Sidebar({
                           <span className="block truncate text-slate-100 text-sm font-medium">{assignment.title}</span>
                         </button>
 
-                        <div className="relative shrink-0 pr-1.5" data-assignment-menu>
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setOpenMenuId(menuOpen ? null : assignment.id); }}
-                            className={`flex h-6 w-6 items-center justify-center rounded-full transition focus-visible:outline-none mr-1.5 ${
-                              menuOpen
-                                ? "bg-slate-700 text-slate-100 opacity-100"
-                                : "text-slate-500 opacity-0 group-hover:opacity-100 hover:bg-slate-700 hover:text-slate-100 focus-visible:opacity-100"
-                            }`}
-                            aria-label="Opciones de la tarea"
-                            aria-haspopup="true"
-                            aria-expanded={menuOpen}
-                          >
-                            <MoreHorizontal size={14} aria-hidden />
-                          </button>
-
-                          {menuOpen && (
-                            <div
-                              className="absolute right-0 top-full z-50 mt-1 min-w-[140px] overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-xl"
-                              data-assignment-menu
-                            >
+                        <div className="shrink-0 pr-2.5">
+                          <RowMenu
+                            ariaLabel="Opciones de la tarea"
+                            items={[
+                              { label: "Renombrar", onClick: () => startRename(assignment) },
+                              ...(onDeleteAssignment !== undefined
+                                ? [{ label: "Eliminar", danger: true, onClick: () => setDeletingId(assignment.id) }]
+                                : [])
+                            ]}
+                            renderTrigger={({ onClick, ref, ariaExpanded, ariaLabel, menuOpen: mo }) => (
                               <button
                                 type="button"
-                                onClick={(e) => { e.stopPropagation(); startRename(assignment); }}
-                                className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-slate-200 text-sm transition hover:bg-slate-800"
+                                ref={ref}
+                                onClick={onClick}
+                                className={`flex h-6 w-6 items-center justify-center rounded-full transition focus-visible:outline-none ${
+                                  mo
+                                    ? "bg-slate-700 text-slate-100 opacity-100"
+                                    : "text-slate-500 opacity-0 group-hover:opacity-100 hover:bg-slate-700 hover:text-slate-100 focus-visible:opacity-100"
+                                }`}
+                                aria-label={ariaLabel}
+                                aria-haspopup="true"
+                                aria-expanded={ariaExpanded}
                               >
-                                Renombrar
+                                <MoreHorizontal size={14} aria-hidden />
                               </button>
-                              {onDeleteAssignment !== undefined && (
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setOpenMenuId(null);
-                                    setDeletingId(assignment.id);
-                                  }}
-                                  className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-rose-300 text-sm transition hover:bg-slate-800"
-                                >
-                                  Eliminar
-                                </button>
-                              )}
-                            </div>
-                          )}
+                            )}
+                          />
                         </div>
                       </>
                     )}
@@ -299,33 +271,6 @@ export function Sidebar({
         </section>
       )}
 
-      <section className="mb-6">
-        <div className="mb-3 flex items-center justify-between gap-4">
-          <h2 className="font-semibold text-slate-300 text-sm uppercase tracking-widest">Materiales</h2>
-        </div>
-        {AsyncResult.matchWithError(materials, {
-          onInitial: () => <p className="text-slate-400">Cargando materiales…</p>,
-          onError: (error) => <p className="text-red-200">{String(error)}</p>,
-          onDefect: (defect) => <p className="text-red-200">{String(defect)}</p>,
-          onSuccess: ({ value }) => value.materials.length === 0
-            ? <p className="text-slate-400">Aún no has subido PDFs.</p>
-            : (
-                <details className="rounded-2xl border border-slate-800 bg-slate-900">
-                  <summary className="cursor-pointer px-4 py-3 font-medium text-slate-100 marker:text-sky-400">
-                    {value.materials.length} material{value.materials.length === 1 ? "" : "es"}
-                  </summary>
-                  <ul className="grid gap-2 border-slate-800 border-t p-3">
-                    {value.materials.map((material) => (
-                      <li className="rounded-xl bg-slate-950/70 p-3" key={material.id}>
-                        <strong className="block text-slate-100">{material.title}</strong>
-                        <span className="mt-1 block text-slate-400 text-sm">{material.pageCount} páginas · {material.fileName}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </details>
-              )
-        })}
-      </section>
 
       <section className="mb-6">
         <div className="mb-3 flex items-center justify-between gap-4">
@@ -477,7 +422,8 @@ type ArtifactSummary = { readonly id: string; readonly kind: string; readonly ti
 const KIND_META: Record<string, { readonly Icon: typeof FileText; readonly label: string; readonly color: string }> = {
   note: { Icon: FileText, label: "Nota", color: "text-sky-300" },
   quiz: { Icon: ListChecks, label: "Cuestionario", color: "text-amber-300" },
-  test: { Icon: ClipboardList, label: "Examen", color: "text-fuchsia-300" }
+  test: { Icon: ClipboardList, label: "Examen", color: "text-fuchsia-300" },
+  diagram: { Icon: Network, label: "Diagrama", color: "text-emerald-300" }
 };
 
 function ArtifactFolders({
@@ -493,6 +439,40 @@ function ArtifactFolders({
 }) {
   const [scopeMap, setScopeMap] = useState<Readonly<Record<string, string>>>(() => getArtifactAssignmentMap());
   useEffect(() => subscribeArtifactScope(() => setScopeMap(getArtifactAssignmentMap())), []);
+  const renameArtifact = useAtomSet(renameArtifactAction, { mode: "promise" });
+  const deleteArtifact = useAtomSet(deleteArtifactAction, { mode: "promise" });
+  const [renamingArtifactId, setRenamingArtifactId] = useState<string | null>(null);
+  const [renameArtifactValue, setRenameArtifactValue] = useState("");
+  const [deletingArtifactId, setDeletingArtifactId] = useState<string | null>(null);
+  const renameArtifactInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (renamingArtifactId !== null) renameArtifactInputRef.current?.focus();
+  }, [renamingArtifactId]);
+
+  const startRenameArtifact = (a: ArtifactSummary) => {
+    setRenamingArtifactId(a.id);
+    setRenameArtifactValue(a.title);
+  };
+
+  const commitRenameArtifact = async (id: string) => {
+    const trimmed = renameArtifactValue.trim();
+    setRenamingArtifactId(null);
+    if (trimmed.length > 0) {
+      await renameArtifact({ id, title: trimmed }).catch(() => undefined);
+    }
+  };
+
+  const confirmDeleteArtifact = async () => {
+    if (deletingArtifactId === null) return;
+    const id = deletingArtifactId;
+    setDeletingArtifactId(null);
+    await deleteArtifact(id).catch(() => undefined);
+  };
+
+  const deletingArtifact = deletingArtifactId !== null
+    ? artifacts.find((a) => a.id === deletingArtifactId) ?? null
+    : null;
 
   const assignmentTitle = new Map(assignments.map((a) => [a.id, a.title]));
   const groups = new Map<string, ArtifactSummary[]>();
@@ -517,6 +497,7 @@ function ArtifactFolders({
       : assignmentTitle.get(key.slice("assignment:".length)) ?? "Tarea eliminada";
 
   return (
+    <>
     <ul className="grid gap-1">
       {entries.map(([key, items]) => {
         const containsSelected = items.some((i) => i.id === selectedId);
@@ -535,21 +516,66 @@ function ArtifactFolders({
                 {items.map((artifact) => {
                   const meta = KIND_META[artifact.kind] ?? { Icon: FileText, label: artifact.kind, color: "text-slate-300" };
                   const active = selectedId === artifact.id;
+                  const isRenaming = renamingArtifactId === artifact.id;
                   return (
-                    <li key={artifact.id} className="min-w-0 overflow-hidden">
-                      <button
-                        type="button"
-                        onClick={() => onSelect(artifact.id)}
-                        className={`flex w-full min-w-0 items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-left text-sm transition ${
-                          active ? "bg-sky-500/15 text-sky-100" : "text-slate-300 hover:bg-slate-800/70"
-                        }`}
-                      >
-                        <meta.Icon size={14} className={`shrink-0 ${active ? "text-sky-300" : meta.color}`} aria-hidden />
-                        <span className="min-w-0 flex-1 truncate">
-                          <span className={`mr-1.5 font-semibold ${meta.color}`}>{meta.label}</span>
-                          <span className="text-slate-400">{artifact.title}</span>
-                        </span>
-                      </button>
+                    <li key={artifact.id} className="group flex min-w-0 items-center overflow-hidden">
+                      {isRenaming ? (
+                        <form
+                          className="flex flex-1 px-2 py-1.5"
+                          onSubmit={(e) => { e.preventDefault(); void commitRenameArtifact(artifact.id); }}
+                        >
+                          <input
+                            ref={renameArtifactInputRef}
+                            value={renameArtifactValue}
+                            onChange={(e) => setRenameArtifactValue(e.currentTarget.value)}
+                            onBlur={() => void commitRenameArtifact(artifact.id)}
+                            onKeyDown={(e) => { if (e.key === "Escape") setRenamingArtifactId(null); }}
+                            className="min-w-0 flex-1 bg-transparent text-slate-100 text-sm outline-none"
+                          />
+                        </form>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => onSelect(artifact.id)}
+                            className={`flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-lg px-2 py-1.5 text-left text-sm transition ${
+                              active ? "bg-sky-500/15 text-sky-100" : "text-slate-300 hover:bg-slate-800/70"
+                            }`}
+                          >
+                            <meta.Icon size={14} className={`shrink-0 ${active ? "text-sky-300" : meta.color}`} aria-hidden />
+                            <span className="min-w-0 flex-1 truncate">
+                              <span className={`mr-1.5 font-semibold ${meta.color}`}>{meta.label}</span>
+                              <span className="text-slate-400">{artifact.title}</span>
+                            </span>
+                          </button>
+                          <div className="shrink-0 pl-1 pr-1">
+                            <RowMenu
+                              ariaLabel="Opciones del artefacto"
+                              items={[
+                                { label: "Renombrar", onClick: () => startRenameArtifact(artifact) },
+                                { label: "Eliminar", danger: true, onClick: () => setDeletingArtifactId(artifact.id) }
+                              ]}
+                              renderTrigger={({ onClick, ref, ariaExpanded, ariaLabel, menuOpen: mo }) => (
+                                <button
+                                  type="button"
+                                  ref={ref}
+                                  onClick={onClick}
+                                  className={`flex h-6 w-6 items-center justify-center rounded-full transition focus-visible:outline-none ${
+                                    mo
+                                      ? "bg-slate-700 text-slate-100 opacity-100"
+                                      : "text-slate-500 opacity-0 group-hover:opacity-100 hover:bg-slate-700 hover:text-slate-100 focus-visible:opacity-100"
+                                  }`}
+                                  aria-label={ariaLabel}
+                                  aria-haspopup="true"
+                                  aria-expanded={ariaExpanded}
+                                >
+                                  <MoreHorizontal size={12} aria-hidden />
+                                </button>
+                              )}
+                            />
+                          </div>
+                        </>
+                      )}
                     </li>
                   );
                 })}
@@ -559,5 +585,38 @@ function ArtifactFolders({
         );
       })}
     </ul>
+    {deletingArtifact !== null && createPortal(
+      <div
+        className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur"
+        role="dialog"
+        aria-modal="true"
+        onClick={() => setDeletingArtifactId(null)}
+      >
+        <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <h2 className="font-bold text-slate-100 text-base">¿Eliminar artefacto?</h2>
+          <p className="mt-2 text-slate-400 text-sm">
+            Se eliminará <strong className="text-slate-100">{deletingArtifact.title}</strong> y sus intentos. Esta acción no se puede deshacer.
+          </p>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setDeletingArtifactId(null)}
+              className="rounded-full border border-slate-700 px-4 py-2 text-slate-300 text-sm hover:border-slate-500"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={() => void confirmDeleteArtifact()}
+              className="rounded-full bg-rose-500 px-5 py-2 font-bold text-slate-950 text-sm hover:bg-rose-400"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>,
+      document.body
+    )}
+    </>
   );
 }

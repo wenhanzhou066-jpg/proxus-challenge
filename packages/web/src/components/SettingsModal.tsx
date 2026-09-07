@@ -7,9 +7,11 @@ const CVD_OPTIONS: ReadonlyArray<Cvd> = ["none", "deutan", "protan", "tritan"];
 
 interface Props {
   readonly onClose: () => void;
+  readonly onRetakeTest?: () => void;
+  readonly hasProfile?: boolean;
 }
 
-export function SettingsModal({ onClose }: Props) {
+export function SettingsModal({ onClose, onRetakeTest, hasProfile = false }: Props) {
   const [settings, setSettings] = useSettings();
   const [name, setName] = useState(settings.name);
   const [cvd, setCvd] = useState<Cvd>(settings.cvd);
@@ -101,6 +103,29 @@ export function SettingsModal({ onClose }: Props) {
             </span>
           </label>
         </fieldset>
+
+        {onRetakeTest !== undefined && (
+          <fieldset className="mb-6">
+            <legend className="mb-2 font-semibold text-slate-300 text-sm">Test de personalidad</legend>
+            <button
+              type="button"
+              onClick={onRetakeTest}
+              className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2.5 text-left text-sm transition hover:border-sky-500 hover:bg-slate-950"
+            >
+              <span>
+                <span className="block font-semibold text-slate-100">
+                  {hasProfile ? "Rehacer el test" : "Hacer el test"}
+                </span>
+                <span className="mt-0.5 block text-slate-400 text-xs">
+                  {hasProfile
+                    ? "Reinicia tu color de personalidad y recalcula la adaptación del tutor."
+                    : "Contesta 3 minutos de preguntas para desbloquear la adaptación por color."}
+                </span>
+              </span>
+              <span className="shrink-0 text-sky-300">→</span>
+            </button>
+          </fieldset>
+        )}
 
         <div className="flex justify-end gap-2">
           <button

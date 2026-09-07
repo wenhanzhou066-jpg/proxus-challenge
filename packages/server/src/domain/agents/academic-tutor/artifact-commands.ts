@@ -115,7 +115,7 @@ export const makeArtifactCommands = (repository: ArtifactRepository) => {
   ])(
     AgentCli.Command.withDescription("List saved artifacts")(
       AgentCli.Command.exec("list", {
-        kind: AgentCli.Argument.optionalChoice("kind", ["note", "quiz", "test"] as const).pipe(
+        kind: AgentCli.Argument.optionalChoice("kind", ["note", "quiz", "test", "diagram"] as const).pipe(
           AgentCli.Argument.withDescription("Optional artifact kind filter")
         )
       }, ({ kind }) =>
@@ -153,9 +153,13 @@ export const makeArtifactCommands = (repository: ArtifactRepository) => {
     {
       command: `artifacts create '{"kind":"quiz","title":"Basics quiz","questions":[{"type":"true-false","id":"q1","prompt":"2+2=4","correctAnswer":true,"explanation":"Basic arithmetic."}]}'`,
       description: "Create a quiz artifact"
+    },
+    {
+      command: `artifacts create '{"kind":"diagram","title":"Photosynthesis flow","layout":"flowchart","nodes":[{"id":"n1","label":"Sunlight","concept":"Energy source"},{"id":"n2","label":"Chlorophyll"}],"edges":[{"id":"e1","source":"n1","target":"n2","label":"absorbed by"}]}'`,
+      description: "Create a diagram artifact"
     }
   ])(
-    AgentCli.Command.withDescription("Create a note, quiz, or test artifact from JSON")(
+    AgentCli.Command.withDescription("Create a note, quiz, test, or diagram artifact from JSON")(
       AgentCli.Command.exec("create", {
         json: AgentCli.Argument.string("json").pipe(
           AgentCli.Argument.withDescription("CreateArtifactInput JSON")
@@ -228,6 +232,6 @@ export const makeArtifactCommands = (repository: ArtifactRepository) => {
   );
 
   return AgentCli.Command.group("artifacts", [list, show, create, submit, attempts, grade] as const).pipe(
-    AgentCli.Command.withDescription("Study artifacts: notes, quizzes, tests, and attempts")
+    AgentCli.Command.withDescription("Study artifacts: notes, quizzes, tests, diagrams, and attempts")
   );
 };

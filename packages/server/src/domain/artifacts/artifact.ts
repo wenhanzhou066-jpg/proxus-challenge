@@ -71,10 +71,43 @@ export const TestArtifact = Schema.Struct({
 });
 export type TestArtifact = typeof TestArtifact.Type;
 
+export const DiagramNode = Schema.Struct({
+  id: Schema.String,
+  label: Schema.String,
+  concept: Schema.optional(Schema.String)
+});
+export type DiagramNode = typeof DiagramNode.Type;
+
+export const DiagramEdge = Schema.Struct({
+  id: Schema.String,
+  source: Schema.String,
+  target: Schema.String,
+  label: Schema.optional(Schema.String)
+});
+export type DiagramEdge = typeof DiagramEdge.Type;
+
+export const DiagramLayout = Schema.Union([
+  Schema.Literal("flowchart"),
+  Schema.Literal("mindmap"),
+  Schema.Literal("concept-map")
+]);
+export type DiagramLayout = typeof DiagramLayout.Type;
+
+export const DiagramArtifact = Schema.Struct({
+  kind: Schema.Literal("diagram"),
+  id: Schema.String,
+  title: Schema.String,
+  layout: DiagramLayout,
+  nodes: Schema.Array(DiagramNode),
+  edges: Schema.Array(DiagramEdge)
+});
+export type DiagramArtifact = typeof DiagramArtifact.Type;
+
 export const Artifact = Schema.Union([
   NoteArtifact,
   QuizArtifact,
-  TestArtifact
+  TestArtifact,
+  DiagramArtifact
 ]);
 export type Artifact = typeof Artifact.Type;
 export type ArtifactKind = Artifact["kind"];
@@ -100,10 +133,20 @@ export const CreateTestArtifactInput = Schema.Struct({
 });
 export type CreateTestArtifactInput = typeof CreateTestArtifactInput.Type;
 
+export const CreateDiagramArtifactInput = Schema.Struct({
+  kind: Schema.Literal("diagram"),
+  title: Schema.String,
+  layout: DiagramLayout,
+  nodes: Schema.Array(DiagramNode),
+  edges: Schema.Array(DiagramEdge)
+});
+export type CreateDiagramArtifactInput = typeof CreateDiagramArtifactInput.Type;
+
 export const CreateArtifactInput = Schema.Union([
   CreateNoteArtifactInput,
   CreateQuizArtifactInput,
-  CreateTestArtifactInput
+  CreateTestArtifactInput,
+  CreateDiagramArtifactInput
 ]);
 export type CreateArtifactInput = typeof CreateArtifactInput.Type;
 
@@ -259,7 +302,8 @@ export const ListArtifactsInput = Schema.Struct({
   kind: Schema.optional(Schema.Union([
     Schema.Literal("note"),
     Schema.Literal("quiz"),
-    Schema.Literal("test")
+    Schema.Literal("test"),
+    Schema.Literal("diagram")
   ]))
 });
 export type ListArtifactsInput = typeof ListArtifactsInput.Type;
@@ -315,6 +359,7 @@ export interface ArtifactRepository {
   readonly getAttempt: (id: string) => Effect.Effect<ArtifactAttempt, ArtifactRepositoryError>;
   readonly listAttempts: (artifactId?: string) => Effect.Effect<readonly ArtifactAttempt[], ArtifactRepositoryError>;
   readonly gradeAttempt: (attemptId: string) => Effect.Effect<ArtifactAttempt, ArtifactRepositoryError>;
+  readonly deleteArtifact: (id: string) => Effect.Effect<void, ArtifactRepositoryError>;
 }
 
 export const ArtifactRepository = Context.Service<ArtifactRepository>(
@@ -329,6 +374,8 @@ export const makeArtifact = (input: CreateArtifactInput): Artifact => {
     case "quiz":
       return { ...input, id };
     case "test":
+      return { ...input, id };
+    case "diagram":
       return { ...input, id };
   }
 };
