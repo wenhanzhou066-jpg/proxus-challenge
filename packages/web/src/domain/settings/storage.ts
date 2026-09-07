@@ -12,7 +12,8 @@ export function loadSettings(): Settings {
       name: typeof parsed.name === "string" ? parsed.name : DEFAULT_SETTINGS.name,
       cvd: parsed.cvd === "deutan" || parsed.cvd === "protan" || parsed.cvd === "tritan" || parsed.cvd === "none"
         ? parsed.cvd
-        : DEFAULT_SETTINGS.cvd
+        : DEFAULT_SETTINGS.cvd,
+      disablePersonalityAdaptation: parsed.disablePersonalityAdaptation === true
     };
   } catch {
     return DEFAULT_SETTINGS;

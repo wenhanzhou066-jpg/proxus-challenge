@@ -13,9 +13,12 @@ export function SettingsModal({ onClose }: Props) {
   const [settings, setSettings] = useSettings();
   const [name, setName] = useState(settings.name);
   const [cvd, setCvd] = useState<Cvd>(settings.cvd);
+  const [disablePersonalityAdaptation, setDisablePersonalityAdaptation] = useState(
+    settings.disablePersonalityAdaptation
+  );
 
   const save = () => {
-    setSettings({ name: name.trim(), cvd });
+    setSettings({ name: name.trim(), cvd, disablePersonalityAdaptation });
     onClose();
   };
 
@@ -73,6 +76,30 @@ export function SettingsModal({ onClose }: Props) {
           <p className="mt-2 text-slate-500 text-xs">
             Cambia la paleta de personalidad para separar mejor los colores. Además cada color añade un símbolo (▲ ● ■ ◆).
           </p>
+        </fieldset>
+
+        <fieldset className="mb-6">
+          <legend className="mb-2 font-semibold text-slate-300 text-sm">Adaptación por personalidad</legend>
+          <label
+            className={`flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 text-sm transition ${
+              disablePersonalityAdaptation
+                ? "border-slate-800 bg-slate-950/60 text-slate-300 hover:border-slate-600"
+                : "border-sky-500 bg-sky-950/40 text-slate-100"
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={!disablePersonalityAdaptation}
+              onChange={(e) => setDisablePersonalityAdaptation(!e.currentTarget.checked)}
+              className="mt-0.5 accent-sky-500"
+            />
+            <span>
+              <span className="block font-semibold">Adaptar tutor y sesiones a mi color</span>
+              <span className="mt-0.5 block text-slate-400 text-xs">
+                Ajusta el tono del tutor (más directo, socrático, riguroso, etc.), la duración del cronómetro y el número de tarjetas de repaso según tu resultado en el test de personalidad. Desactívalo para usar valores neutros.
+              </span>
+            </span>
+          </label>
         </fieldset>
 
         <div className="flex justify-end gap-2">

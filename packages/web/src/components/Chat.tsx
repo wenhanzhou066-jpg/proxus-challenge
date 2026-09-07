@@ -12,6 +12,7 @@ import { clearMessages, loadMessages, saveMessages } from "../domain/assignments
 import type { Assignment, Material } from "../domain/assignments/types.ts";
 import { getStrategy } from "../domain/personality/strategy.ts";
 import type { Profile } from "../domain/personality/types.ts";
+import { useSettings } from "../domain/settings/hooks.ts";
 import { loadAnalysis } from "../domain/precompute/storage.ts";
 import { Files, Loader2, Send } from "lucide-react";
 import { MaterialsLibrary } from "./MaterialsLibrary.tsx";
@@ -89,7 +90,11 @@ export function Chat({
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
   }, [input]);
 
-  const strategy = useMemo(() => getStrategy(profile), [profile]);
+  const [settings] = useSettings();
+  const strategy = useMemo(
+    () => getStrategy(profile, settings.disablePersonalityAdaptation),
+    [profile, settings.disablePersonalityAdaptation]
+  );
 
   // End active session when switching assignments
   useEffect(() => {
@@ -126,10 +131,16 @@ export function Chat({
   const refreshMaterials = useAtomRefresh(materialsQuery);
   const pendingInvalidations = useRef<Array<ReturnType<typeof invalidationsForToolCall>>>([]);
 
-  const scopedInput = (raw: string) =>
-    currentAssignment === null
-      ? raw
-      : `[Tarea: ${currentAssignment.title}${currentAssignment.description.length > 0 ? ` — ${currentAssignment.description}` : ""}]\n\n${raw}`;
+  const scopedInput = (raw: string) => {
+    const parts: string[] = [];
+    parts.push(`[Voz: ${strategy.tutorVoice}]`);
+    if (currentAssignment !== null) {
+      const desc = currentAssignment.description.length > 0 ? ` — ${currentAssignment.description}` : "";
+      parts.push(`[Tarea: ${currentAssignment.title}${desc}]`);
+    }
+    parts.push(raw);
+    return parts.join("\n\n");
+  };
 
   const submit = async (nextInput: string) => {
     const trimmed = nextInput.trim();
@@ -340,21 +351,19 @@ export function Chat({
   );
 }
 
+const SCOPE_PREFIX = /^(?:\[(?:Voz|Tarea):[^\]]*\]\n\n)+/;
+
+function stripAssignmentScope(content: string): string {
+  return content.replace(SCOPE_PREFIX, "");
+}
+
 const MessageBubble = memo(function MessageBubble({ message }: { readonly message: AgentMessage }) {
   if (message.role === "tool-call" || message.role === "tool-result") {
-    return (
-      <details className="w-full rounded-2xl border border-slate-800 bg-slate-950 p-4 text-slate-400">
-        <summary className="cursor-pointer">
-          {message.role === "tool-call" ? `Llamada a herramienta: ${message.name}` : `Resultado de herramienta: ${message.name}`}
-        </summary>
-        <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-sm">
-          {JSON.stringify(message.role === "tool-call" ? message.input : message.result, null, 2)}
-        </pre>
-      </details>
-    );
+    return null;
   }
 
   const isAssistant = message.role === "assistant";
+  const displayContent = message.role === "user" ? stripAssignmentScope(message.content) : message.content;
   return (
     <article className={message.role === "user"
       ? "max-w-3xl self-end rounded-2xl border border-blue-700 bg-blue-950 p-4"
@@ -364,12 +373,12 @@ const MessageBubble = memo(function MessageBubble({ message }: { readonly messag
         <span className="block font-bold text-sky-400 text-xs uppercase tracking-wide">
           {message.role === "user" ? "Tú" : "Tutor"}
         </span>
-        {isAssistant && message.content.trim().length > 0 && (
-          <SpeakButton text={message.content} />
+        {isAssistant && displayContent.trim().length > 0 && (
+          <SpeakButton text={displayContent} />
         )}
       </div>
       <div className="text-slate-100 leading-7">
-        <Streamdown>{message.content}</Streamdown>
+        <Streamdown>{displayContent}</Streamdown>
       </div>
     </article>
   );

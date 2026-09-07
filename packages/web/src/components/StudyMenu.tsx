@@ -75,9 +75,9 @@ function formatSize(bytes: number): string {
 export function StudyMenu({ profile, currentAssignment = null, hasAssignments = true, onPick, onOpenCreateAssignment, onOpenMaterialPreview, onStartSession }: Props) {
   const [previewMaterial, setPreviewMaterial] = useState<Material | null>(null);
   const [activeTag, setActiveTag] = useState<string | null>(null);
-  const [{ cvd }] = useSettings();
+  const [{ cvd, disablePersonalityAdaptation }] = useSettings();
 
-  const strategy = getStrategy(profile);
+  const strategy = getStrategy(profile, disablePersonalityAdaptation);
 
   const openMaterial = (material: Material) => {
     if (onOpenMaterialPreview !== undefined) {

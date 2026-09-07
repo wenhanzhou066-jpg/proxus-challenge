@@ -45,6 +45,10 @@ export function OnboardingChoice({ onChoose }: Props) {
             />
           </div>
 
+          <p className="mt-4 text-center text-slate-500 text-xs">
+            La adaptación por personalidad se puede desactivar en cualquier momento desde <span className="text-slate-300">Preferencias</span>.
+          </p>
+
           <section
             className="mt-8 rounded-2xl border border-slate-800 bg-slate-950/60 p-5"
             aria-labelledby="cvd-heading"
