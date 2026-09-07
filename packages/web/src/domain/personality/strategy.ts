@@ -2,7 +2,6 @@ import type { Color, Profile } from "./types.ts";
 
 /**
  * Personality-driven learning strategy config.
- * Consumed by StudySession, FeynmanTimer, ReviewQueue.
  */
 export interface StudyStrategy {
   /** Feynman timer duration in seconds */

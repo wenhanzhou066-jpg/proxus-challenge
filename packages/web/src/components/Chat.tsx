@@ -1,5 +1,5 @@
 import { useAtomRefresh } from "@effect/atom-react";
-import type { AgentMessage, ConceptualQuestion, MaterialAnalysis } from "@proxus/shared";
+import type { AgentMessage } from "@proxus/shared";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Streamdown } from "streamdown";
 import "streamdown/styles.css";
@@ -9,16 +9,14 @@ import { applyInvalidations, invalidationsForToolCall } from "../domain/tutor/in
 import { tagArtifactWithAssignment } from "../domain/artifacts/scope.ts";
 import { streamTutorMessage } from "../domain/tutor/stream.ts";
 import { clearMessages, loadMessages, saveMessages } from "../domain/assignments/storage.ts";
-import type { Assignment, Material } from "../domain/assignments/types.ts";
+import type { Assignment } from "../domain/assignments/types.ts";
 import { getStrategy } from "../domain/personality/strategy.ts";
 import type { Profile } from "../domain/personality/types.ts";
 import { useSettings } from "../domain/settings/hooks.ts";
-import { loadAnalysis } from "../domain/precompute/storage.ts";
 import { Files, Loader2, Send } from "lucide-react";
 import { MaterialsLibrary } from "./MaterialsLibrary.tsx";
 import { SpeakButton } from "./SpeakButton.tsx";
 import { StudyMenu } from "./StudyMenu.tsx";
-import { StudySession } from "./StudySession.tsx";
 import { VoiceInputButton } from "./VoiceInputButton.tsx";
 
 interface ChatProps {
@@ -74,10 +72,6 @@ export function Chat({
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | undefined>();
-  const [activeSession, setActiveSession] = useState<{
-    material: Material;
-    questions: ReadonlyArray<ConceptualQuestion>;
-  } | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
@@ -99,24 +93,6 @@ export function Chat({
     () => getStrategy(profile, settings.disablePersonalityAdaptation),
     [profile, settings.disablePersonalityAdaptation]
   );
-
-  // End active session when switching assignments
-  useEffect(() => {
-    setActiveSession(null);
-  }, [assignmentKey]);
-
-  const startSession = (materialId: string, questionIds?: ReadonlyArray<string>) => {
-    if (currentAssignment === null) return;
-    const material = currentAssignment.materials.find((m) => m.id === materialId);
-    if (material === undefined) return;
-    const analysis: MaterialAnalysis | null = loadAnalysis(materialId);
-    if (analysis === null) return;
-    const questions = questionIds === undefined
-      ? analysis.questions
-      : analysis.questions.filter((q) => questionIds.includes(q.id));
-    if (questions.length === 0) return;
-    setActiveSession({ material, questions });
-  };
 
   useEffect(() => {
     if (assignmentKey === null) {
@@ -266,49 +242,31 @@ export function Chat({
       </header>
 
       <section className="flex flex-col gap-4 overflow-y-auto p-6" aria-live="polite">
-        {activeSession !== null
-          ? <StudySession
-              materialId={activeSession.material.id}
-              materialName={activeSession.material.name}
-              questions={activeSession.questions}
-              strategy={strategy}
-              onEscape={(question, userAttempt) => {
-                const attemptSection = userAttempt.trim().length > 0
-                  ? `\n\nEsto es lo que he intentado: ${userAttempt.trim()}`
-                  : "";
-                setInput(
-                  `Me he atascado con esta pregunta sobre "${activeSession.material.name}":\n\n> ${question.prompt}${attemptSection}\n\nNo me des la respuesta directamente — guíame para pensar en ella.`
-                );
-                setActiveSession(null);
-              }}
-              onExit={() => setActiveSession(null)}
+        {messages.length === 0
+          ? <StudyMenu
+              profile={profile}
+              currentAssignment={currentAssignment}
+              hasAssignments={assignments.length > 0}
+              onPick={(prompt) => void submit(prompt)}
+              {...(onOpenCreateAssignment !== undefined ? { onOpenCreateAssignment } : {})}
+              {...(onOpenMaterialPreview !== undefined ? { onOpenMaterialPreview } : {})}
             />
-          : messages.length === 0
-            ? <StudyMenu
-                profile={profile}
-                currentAssignment={currentAssignment}
-                hasAssignments={assignments.length > 0}
-                onPick={(prompt) => void submit(prompt)}
-                onStartSession={startSession}
-                {...(onOpenCreateAssignment !== undefined ? { onOpenCreateAssignment } : {})}
-                {...(onOpenMaterialPreview !== undefined ? { onOpenMaterialPreview } : {})}
-              />
-            : (
-              <>
-                {messages.map((message, index) => (
-                  <MessageBubble
-                    key={index}
-                    message={message}
-                    animate={index === typingIndex}
-                    onAnimationDone={() => setTypingIndex((cur) => (cur === index ? null : cur))}
-                  />
-                ))}
-                {isSending && (messages.length === 0 || messages[messages.length - 1]?.role !== "assistant") && (
-                  <ThinkingBubble />
-                )}
-                <div ref={scrollAnchorRef} aria-hidden />
-              </>
-            )}
+          : (
+            <>
+              {messages.map((message, index) => (
+                <MessageBubble
+                  key={index}
+                  message={message}
+                  animate={index === typingIndex}
+                  onAnimationDone={() => setTypingIndex((cur) => (cur === index ? null : cur))}
+                />
+              ))}
+              {isSending && (messages.length === 0 || messages[messages.length - 1]?.role !== "assistant") && (
+                <ThinkingBubble />
+              )}
+              <div ref={scrollAnchorRef} aria-hidden />
+            </>
+          )}
       </section>
 
       {error === undefined ? null : (
@@ -433,37 +391,36 @@ function estimateMaxSteps(input: string): number {
 function useTypewriter(fullText: string, active: boolean, onDone?: () => void) {
   const shouldAnimate = active && fullText.length > 120;
   const [revealed, setRevealed] = useState(shouldAnimate ? 0 : fullText.length);
-  const doneRef = useRef(false);
+  // Stash the latest onDone in a ref so effect deps stay stable and the
+  // animation doesn't restart every time the parent re-renders.
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
 
   useEffect(() => {
     if (!shouldAnimate) {
       setRevealed(fullText.length);
-      onDone?.();
+      onDoneRef.current?.();
       return;
     }
-    doneRef.current = false;
+    let cancelled = false;
     setRevealed(0);
-    // ~800 chars/sec: fast enough that you never wait on the animation for a
-    // long reply, slow enough that you still perceive it as "streaming".
     const cps = 800;
     const startedAt = performance.now();
     let raf = 0;
     const tick = () => {
+      if (cancelled) return;
       const elapsed = (performance.now() - startedAt) / 1000;
       const next = Math.min(fullText.length, Math.floor(elapsed * cps));
       setRevealed(next);
       if (next >= fullText.length) {
-        if (!doneRef.current) {
-          doneRef.current = true;
-          onDone?.();
-        }
+        onDoneRef.current?.();
         return;
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [fullText, shouldAnimate, onDone]);
+    return () => { cancelled = true; cancelAnimationFrame(raf); };
+  }, [fullText, shouldAnimate]);
 
   return shouldAnimate ? fullText.slice(0, revealed) : fullText;
 }
