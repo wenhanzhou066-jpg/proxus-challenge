@@ -30,8 +30,8 @@ const DEFAULT: StudyStrategy = {
   dailyCards: 6,
   hintsUpFront: 0,
   requirePrediction: true,
-  ctaLabel: "Start study session",
-  tagline: "Think first — memorize second."
+  ctaLabel: "Empezar sesión de estudio",
+  tagline: "Piensa primero — memoriza después."
 };
 
 const BY_COLOR: Record<Color, StudyStrategy> = {
@@ -42,8 +42,8 @@ const BY_COLOR: Record<Color, StudyStrategy> = {
     dailyCards: 8,
     hintsUpFront: 0,
     requirePrediction: true,
-    ctaLabel: "Sprint session",
-    tagline: "Beat the clock. Own the concept."
+    ctaLabel: "Sesión sprint",
+    tagline: "Gana al reloj. Domina el concepto."
   },
   Y: {
     feynmanSeconds: 180,
@@ -52,8 +52,8 @@ const BY_COLOR: Record<Color, StudyStrategy> = {
     dailyCards: 6,
     hintsUpFront: 1,
     requirePrediction: true,
-    ctaLabel: "Explore session",
-    tagline: "Connect the dots your way."
+    ctaLabel: "Sesión de exploración",
+    tagline: "Conecta las ideas a tu manera."
   },
   G: {
     feynmanSeconds: 300,
@@ -62,8 +62,8 @@ const BY_COLOR: Record<Color, StudyStrategy> = {
     dailyCards: 4,
     hintsUpFront: 1,
     requirePrediction: true,
-    ctaLabel: "Guided session",
-    tagline: "One question at a time — steady wins."
+    ctaLabel: "Sesión guiada",
+    tagline: "Una pregunta a la vez — la constancia gana."
   },
   B: {
     feynmanSeconds: 300,
@@ -72,8 +72,8 @@ const BY_COLOR: Record<Color, StudyStrategy> = {
     dailyCards: 6,
     hintsUpFront: 0,
     requirePrediction: true,
-    ctaLabel: "Deep session",
-    tagline: "Rigor first. Cite your reasoning."
+    ctaLabel: "Sesión en profundidad",
+    tagline: "Rigor primero. Justifica tu razonamiento."
   }
 };
 

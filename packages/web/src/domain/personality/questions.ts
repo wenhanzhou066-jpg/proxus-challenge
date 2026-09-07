@@ -3,122 +3,122 @@ import type { Tetrad } from "./types.ts";
 export const TETRADS: ReadonlyArray<Tetrad> = [
   {
     id: 1,
-    prompt: "You just got a big new assignment. Your first move:",
+    prompt: "Acabas de recibir una tarea grande y nueva. Tu primer movimiento:",
     options: {
-      R: "Break it into milestones and start now",
-      Y: "Message a friend to study together",
-      G: "Read it twice, sit with it a bit",
-      B: "Research everything about the topic first"
+      R: "Divídela en hitos y empieza ya",
+      Y: "Escribe a un amigo para estudiar juntos",
+      G: "Léela dos veces, deja que repose un rato",
+      B: "Investiga todo sobre el tema primero"
     }
   },
   {
     id: 2,
-    prompt: "Group project, deadline in a week. You:",
+    prompt: "Trabajo en grupo, plazo en una semana. Tú:",
     options: {
-      R: "Assign roles and set the schedule",
-      Y: "Turn it into a fun brainstorm",
-      G: "Ask what everyone's comfortable doing",
-      B: "Build a detailed plan and timeline"
+      R: "Asignas roles y fijas el calendario",
+      Y: "Lo conviertes en una lluvia de ideas divertida",
+      G: "Preguntas con qué se siente cómodo cada uno",
+      B: "Montas un plan detallado con cronograma"
     }
   },
   {
     id: 3,
-    prompt: "Studying alone at night. You:",
+    prompt: "Estudias solo por la noche. Tú:",
     options: {
-      R: "Race yourself against the clock",
-      Y: "Put on a playlist, take frequent breaks",
-      G: "Follow the same routine as always",
-      B: "Take detailed notes, re-read chapters"
+      R: "Compites contra el reloj",
+      Y: "Pones una playlist y haces pausas frecuentes",
+      G: "Sigues la rutina de siempre",
+      B: "Tomas notas detalladas, releyendo capítulos"
     }
   },
   {
     id: 4,
-    prompt: "You disagree with something the teacher said. You:",
+    prompt: "No estás de acuerdo con algo que dijo el profesor. Tú:",
     options: {
-      R: "Push back in class",
-      Y: "Joke about it with classmates after",
-      G: "Say nothing, let it go",
-      B: "Look it up later to check the facts"
+      R: "Le rebates en clase",
+      Y: "Bromeas sobre ello con tus compañeros después",
+      G: "No dices nada, lo dejas pasar",
+      B: "Lo compruebas más tarde para verificar los hechos"
     }
   },
   {
     id: 5,
-    prompt: "Exam tomorrow, you're not ready. You:",
+    prompt: "Examen mañana, no estás preparado. Tú:",
     options: {
-      R: "Pull an all-nighter, brute force it",
-      Y: "Text friends to cram together",
-      G: "Do what you can, accept the outcome",
-      B: "Prioritize the topics most likely to appear"
+      R: "Pasas la noche en vela, a lo bruto",
+      Y: "Escribes a amigos para empollar juntos",
+      G: "Haces lo que puedes y aceptas el resultado",
+      B: "Priorizas los temas con más probabilidad de caer"
     }
   },
   {
     id: 6,
-    prompt: "Someone gives you unclear instructions. You:",
+    prompt: "Alguien te da instrucciones poco claras. Tú:",
     options: {
-      R: "Just start, figure it out as you go",
-      Y: "Ask them to walk you through it",
-      G: "Wait until it's clearer",
-      B: "Ask for written specs"
+      R: "Empiezas ya, lo resuelves sobre la marcha",
+      Y: "Le pides que te lo explique paso a paso",
+      G: "Esperas a que quede más claro",
+      B: "Pides especificaciones por escrito"
     }
   },
   {
     id: 7,
-    prompt: "Your study plan gets disrupted. You:",
+    prompt: "Tu plan de estudio se ve interrumpido. Tú:",
     options: {
-      R: "Adapt fast, keep moving",
-      Y: "Roll with it — plans are boring anyway",
-      G: "Feel unsettled, want to reschedule",
-      B: "Rebuild the plan from scratch"
+      R: "Te adaptas rápido y sigues adelante",
+      Y: "Lo tomas con calma — los planes son aburridos",
+      G: "Te sientes inquieto, quieres reprogramar",
+      B: "Rehaces el plan desde cero"
     }
   },
   {
     id: 8,
-    prompt: "New topic feels overwhelming. You:",
+    prompt: "Un tema nuevo te resulta abrumador. Tú:",
     options: {
-      R: "Attack the hardest part first",
-      Y: "Watch a fun intro video",
-      G: "Break it into small steady steps",
-      B: "Find the definitive textbook"
+      R: "Atacas primero la parte más difícil",
+      Y: "Ves un vídeo de introducción divertido",
+      G: "Lo divides en pequeños pasos constantes",
+      B: "Buscas el libro de texto definitivo"
     }
   },
   {
     id: 9,
-    prompt: "You get harsh feedback on your work. You:",
+    prompt: "Recibes críticas duras a tu trabajo. Tú:",
     options: {
-      R: "Argue if you think they're wrong",
-      Y: "Deflect with humor, then fix it",
-      G: "Take it personally, work quietly",
-      B: "Analyze each point in detail"
+      R: "Discutes si crees que se equivocan",
+      Y: "Lo esquivas con humor y luego lo arreglas",
+      G: "Te lo tomas personal, trabajas en silencio",
+      B: "Analizas cada punto en detalle"
     }
   },
   {
     id: 10,
-    prompt: "A friend asks for study help. You:",
+    prompt: "Un amigo te pide ayuda para estudiar. Tú:",
     options: {
-      R: "Get to the point, teach fast",
-      Y: "Turn it into a shared session",
-      G: "Sit with them as long as needed",
-      B: "Explain the underlying theory"
+      R: "Vas al grano, enseñas rápido",
+      Y: "Lo conviertes en una sesión compartida",
+      G: "Te sientas con él el tiempo que haga falta",
+      B: "Le explicas la teoría subyacente"
     }
   },
   {
     id: 11,
-    prompt: "Free evening, no plans. You:",
+    prompt: "Tarde libre, sin planes. Tú:",
     options: {
-      R: "Get ahead on something important",
-      Y: "Text people, find something fun",
-      G: "Enjoy quiet time at home",
-      B: "Deep-dive a hobby or topic"
+      R: "Avanzas algo importante",
+      Y: "Escribes a la gente, buscas algo divertido",
+      G: "Disfrutas de un rato tranquilo en casa",
+      B: "Profundizas en un hobby o tema"
     }
   },
   {
     id: 12,
-    prompt: "Big decision to make. You:",
+    prompt: "Gran decisión que tomar. Tú:",
     options: {
-      R: "Decide fast, adjust later",
-      Y: "Ask friends what they think",
-      G: "Sleep on it",
-      B: "List pros and cons"
+      R: "Decides rápido, ajustas después",
+      Y: "Preguntas a tus amigos qué opinan",
+      G: "Lo consultas con la almohada",
+      B: "Haces una lista de pros y contras"
     }
   }
 ];

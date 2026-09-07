@@ -37,9 +37,9 @@ function EmptyWorkspace() {
     <main className="h-screen min-w-0 overflow-y-auto border-slate-800 border-r bg-slate-950/60 p-6 max-md:h-auto max-md:border-r-0 max-md:border-b">
       <div className="grid h-full place-items-center rounded-3xl border border-dashed border-slate-800 bg-slate-900/40 p-8 text-center">
         <div>
-          <p className="mb-2 font-bold text-sky-400 text-xs uppercase tracking-widest">Practice workspace</p>
-          <h2 className="text-balance font-bold text-3xl text-slate-100">Select a note, quiz, or test from the sidebar.</h2>
-          <p className="mt-3 max-w-xl text-slate-400">Quizzes and tests can be solved directly here. The tutor chat remains available for hints and explanations.</p>
+          <p className="mb-2 font-bold text-sky-400 text-xs uppercase tracking-widest">Espacio de práctica</p>
+          <h2 className="text-balance font-bold text-3xl text-slate-100">Selecciona una nota, cuestionario o examen en la barra lateral.</h2>
+          <p className="mt-3 max-w-xl text-slate-400">Los cuestionarios y exámenes se pueden resolver directamente aquí. El chat del tutor sigue disponible para pistas y explicaciones.</p>
         </div>
       </div>
     </main>
@@ -64,7 +64,7 @@ function ArtifactDetail({ artifactId, onClose }: { readonly artifactId: string; 
         </div>
       )}
       {AsyncResult.matchWithError(artifact, {
-        onInitial: () => <p className="text-slate-400">Loading artifact…</p>,
+        onInitial: () => <p className="text-slate-400">Cargando artefacto…</p>,
         onError: (error) => <p className="text-red-200">{String(error)}</p>,
         onDefect: (defect) => <p className="text-red-200">{String(defect)}</p>,
         onSuccess: ({ value }) => <ArtifactContent artifact={value} />
@@ -86,7 +86,7 @@ function ArtifactContent({ artifact }: { readonly artifact: Artifact }) {
 function NoteViewer({ artifact }: { readonly artifact: Extract<Artifact, { readonly kind: "note" }> }) {
   return (
     <article className="mx-auto max-w-4xl rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl shadow-slate-950/30">
-      <p className="mb-2 font-bold text-sky-400 text-xs uppercase tracking-widest">Note</p>
+      <p className="mb-2 font-bold text-sky-400 text-xs uppercase tracking-widest">Nota</p>
       <h2 className="mb-6 font-bold text-3xl text-slate-100">{artifact.title}</h2>
       <div className="prose prose-invert max-w-none">
         <Streamdown>{artifact.markdown}</Streamdown>
@@ -135,7 +135,7 @@ function ExerciseSolver({ artifact }: { readonly artifact: Extract<Artifact, { r
       <header className="mb-5 rounded-3xl border border-slate-800 bg-slate-900 p-6">
         <p className="mb-2 font-bold text-sky-400 text-xs uppercase tracking-widest">{artifact.kind}</p>
         <h2 className="font-bold text-3xl text-slate-100">{artifact.title}</h2>
-        <p className="mt-2 text-slate-400">Answer every question, submit, and review your corrections.</p>
+        <p className="mt-2 text-slate-400">Responde cada pregunta, envía y revisa tus correcciones.</p>
       </header>
 
       <div className="grid gap-4">
@@ -162,8 +162,8 @@ function ExerciseSolver({ artifact }: { readonly artifact: Extract<Artifact, { r
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-slate-400 text-sm">
                   {unansweredQuestions.length === 0
-                    ? "Ready to submit."
-                    : `${unansweredQuestions.length} question${unansweredQuestions.length === 1 ? "" : "s"} unanswered.`}
+                    ? "Listo para enviar."
+                    : `${unansweredQuestions.length} pregunta${unansweredQuestions.length === 1 ? "" : "s"} sin responder.`}
                 </p>
                 <button
                   className="rounded-full bg-sky-400 px-5 py-2 font-semibold text-slate-950 hover:bg-sky-300 disabled:cursor-not-allowed disabled:opacity-50"
@@ -171,13 +171,13 @@ function ExerciseSolver({ artifact }: { readonly artifact: Extract<Artifact, { r
                   disabled={unansweredQuestions.length > 0 || isSubmitting}
                   onClick={submit}
                 >
-                  {isSubmitting ? "Submitting…" : `Submit ${artifact.kind}`}
+                  {isSubmitting ? "Enviando…" : `Enviar ${artifact.kind === "quiz" ? "cuestionario" : "examen"}`}
                 </button>
               </div>
             )
           : (
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="font-semibold text-emerald-200">Attempt graded.</p>
+                <p className="font-semibold text-emerald-200">Intento corregido.</p>
                 <button
                   className="rounded-full border border-slate-700 px-5 py-2 text-slate-200 hover:border-sky-400"
                   type="button"
@@ -187,7 +187,7 @@ function ExerciseSolver({ artifact }: { readonly artifact: Extract<Artifact, { r
                     setError(undefined);
                   }}
                 >
-                  Try again
+                  Intentar de nuevo
                 </button>
               </div>
             )}
@@ -215,7 +215,7 @@ function QuestionCard({
     <section className="rounded-3xl border border-slate-800 bg-slate-900 p-5">
       <div className="mb-4 flex items-start justify-between gap-4">
         <div>
-          <p className="mb-2 text-slate-400 text-sm">Question {index + 1} · {question.type}</p>
+          <p className="mb-2 text-slate-400 text-sm">Pregunta {index + 1} · {question.type}</p>
           <h3 className="font-semibold text-lg text-slate-100">{question.prompt}</h3>
         </div>
         {correction !== undefined && <CorrectionBadge correction={correction} />}
@@ -233,7 +233,7 @@ function QuestionCard({
           value={value}
           disabled={disabled}
           onChange={(event) => onChange(event.currentTarget.value)}
-          placeholder="Write your answer…"
+          placeholder="Escribe tu respuesta…"
         />
       )}
 
@@ -284,8 +284,8 @@ function TrueFalseInput({
   return (
     <div className="grid grid-cols-2 gap-2 max-sm:grid-cols-1">
       {([
-        ["true", "True"],
-        ["false", "False"]
+        ["true", "Verdadero"],
+        ["false", "Falso"]
       ] as const).map(([nextValue, label]) => (
         <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-slate-800 bg-slate-950/70 p-3 hover:border-sky-500" key={nextValue}>
           <input
@@ -311,7 +311,7 @@ function AttemptSummary({ attempt }: { readonly attempt: Extract<ArtifactAttempt
     <section className={`mt-6 rounded-3xl border p-5 ${palette.softBg} ${palette.border}`}>
       <p className={`flex items-center gap-2 font-bold text-xl ${palette.text}`}>
         <span aria-hidden>{palette.icon}</span>
-        Score: {attempt.score} / {attempt.maxScore}
+        Puntuación: {attempt.score} / {attempt.maxScore}
       </p>
       <p className="mt-1 text-slate-200/90">{attempt.summary}</p>
     </section>
@@ -339,13 +339,13 @@ function CorrectionDetails({
     <div className="mt-4 rounded-2xl border border-slate-800 bg-slate-950 p-4 text-sm">
       {correction.questionType === "multiple-choice" && question.type === "multiple-choice" && (
         <>
-          <p className="text-slate-300">Correct answer: <strong>{optionText(question, correction.correctOptionId)}</strong></p>
+          <p className="text-slate-300">Respuesta correcta: <strong>{optionText(question, correction.correctOptionId)}</strong></p>
           <p className="mt-2 text-slate-400">{correction.explanation}</p>
         </>
       )}
       {correction.questionType === "true-false" && (
         <>
-          <p className="text-slate-300">Correct answer: <strong>{correction.correctAnswer ? "True" : "False"}</strong></p>
+          <p className="text-slate-300">Respuesta correcta: <strong>{correction.correctAnswer ? "Verdadero" : "Falso"}</strong></p>
           <p className="mt-2 text-slate-400">{correction.explanation}</p>
         </>
       )}

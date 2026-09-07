@@ -239,7 +239,7 @@ export function App() {
           setShowCreateModal(false);
         } catch (cause) {
           window.alert(
-            `Could not save assignment locally. Your browser may be out of storage space.\n\n${
+            `No se pudo guardar la tarea localmente. Puede que tu navegador se haya quedado sin espacio.\n\n${
               cause instanceof Error ? cause.message : String(cause)
             }`
           );

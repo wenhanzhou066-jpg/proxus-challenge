@@ -48,7 +48,7 @@ export function MaterialsLibrary({ assignmentTitle, materials, onOpen, onClose }
         <header className="flex shrink-0 items-start justify-between gap-4 border-slate-800 border-b px-6 py-5">
           <div className="min-w-0">
             <p className="text-slate-500 text-xs uppercase tracking-widest">{assignmentTitle}</p>
-            <h2 className="mt-1 font-bold text-slate-100 text-xl">Materiales del assignment</h2>
+            <h2 className="mt-1 font-bold text-slate-100 text-xl">Materiales de la tarea</h2>
             <p className="mt-1 text-slate-400 text-sm">
               {materials.length} PDF{materials.length === 1 ? "" : "s"} · click en uno para abrirlo en el panel lateral
             </p>
@@ -144,7 +144,7 @@ function EmptyState() {
   return (
     <div className="grid place-items-center gap-2 py-10 text-center">
       <FileText size={40} strokeWidth={1.4} className="text-slate-600" aria-hidden />
-      <p className="text-slate-400 text-sm">Este assignment no tiene PDFs todavía.</p>
+      <p className="text-slate-400 text-sm">Esta tarea aún no tiene PDFs.</p>
     </div>
   );
 }

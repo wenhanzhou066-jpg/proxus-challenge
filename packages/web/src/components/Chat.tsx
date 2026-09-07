@@ -129,7 +129,7 @@ export function Chat({
   const scopedInput = (raw: string) =>
     currentAssignment === null
       ? raw
-      : `[Assignment: ${currentAssignment.title}${currentAssignment.description.length > 0 ? ` — ${currentAssignment.description}` : ""}]\n\n${raw}`;
+      : `[Tarea: ${currentAssignment.title}${currentAssignment.description.length > 0 ? ` — ${currentAssignment.description}` : ""}]\n\n${raw}`;
 
   const submit = async (nextInput: string) => {
     const trimmed = nextInput.trim();
@@ -194,9 +194,21 @@ export function Chat({
         style={{ paddingLeft: sidebarCollapsed ? 80 : 24 }}
       >
         <div className="min-w-0 flex-1">
-          <h1 className="m-0 truncate font-bold text-xl text-slate-100">
-            {currentAssignment !== null ? currentAssignment.title : "Academic tutor"}
-          </h1>
+          {currentAssignment !== null ? (
+            <h1 className="m-0 truncate font-bold text-xl text-slate-100">
+              {currentAssignment.title}
+            </h1>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <img src="/proxus-mark.webp" alt="" aria-hidden className="h-6 w-auto" />
+              <span
+                className="font-bold text-slate-50 text-xl leading-none"
+                style={{ fontFamily: "var(--font-brand)", letterSpacing: "0.14em" }}
+              >
+                PROXUS
+              </span>
+            </div>
+          )}
           <p className="mt-1 truncate text-slate-500 text-xs">
             {currentAssignment !== null
               ? currentAssignment.description.length > 0
@@ -210,8 +222,8 @@ export function Chat({
             <button
               type="button"
               onClick={() => setLibraryOpen(true)}
-              title="Ver PDFs del assignment"
-              aria-label="Ver PDFs del assignment"
+              title="Ver PDFs de la tarea"
+              aria-label="Ver PDFs de la tarea"
               className="inline-flex h-9 items-center gap-2 rounded-full border border-slate-700 pl-3 pr-2 text-slate-200 text-sm transition hover:border-sky-400 hover:bg-sky-500/10 hover:text-sky-200"
             >
               <Files size={16} strokeWidth={1.8} aria-hidden />
@@ -252,10 +264,10 @@ export function Chat({
               strategy={strategy}
               onEscape={(question, userAttempt) => {
                 const attemptSection = userAttempt.trim().length > 0
-                  ? `\n\nHere's what I tried: ${userAttempt.trim()}`
+                  ? `\n\nEsto es lo que he intentado: ${userAttempt.trim()}`
                   : "";
                 setInput(
-                  `I'm stuck on this question about "${activeSession.material.name}":\n\n> ${question.prompt}${attemptSection}\n\nDon't just give me the answer — walk me through how to think about it.`
+                  `Me he atascado con esta pregunta sobre "${activeSession.material.name}":\n\n> ${question.prompt}${attemptSection}\n\nNo me des la respuesta directamente — guíame para pensar en ella.`
                 );
                 setActiveSession(null);
               }}
@@ -333,7 +345,7 @@ const MessageBubble = memo(function MessageBubble({ message }: { readonly messag
     return (
       <details className="w-full rounded-2xl border border-slate-800 bg-slate-950 p-4 text-slate-400">
         <summary className="cursor-pointer">
-          {message.role === "tool-call" ? `Tool call: ${message.name}` : `Tool result: ${message.name}`}
+          {message.role === "tool-call" ? `Llamada a herramienta: ${message.name}` : `Resultado de herramienta: ${message.name}`}
         </summary>
         <pre className="mt-3 overflow-x-auto whitespace-pre-wrap text-sm">
           {JSON.stringify(message.role === "tool-call" ? message.input : message.result, null, 2)}
@@ -350,7 +362,7 @@ const MessageBubble = memo(function MessageBubble({ message }: { readonly messag
     >
       <div className="mb-2 flex items-center justify-between gap-3">
         <span className="block font-bold text-sky-400 text-xs uppercase tracking-wide">
-          {message.role === "user" ? "You" : "Tutor"}
+          {message.role === "user" ? "Tú" : "Tutor"}
         </span>
         {isAssistant && message.content.trim().length > 0 && (
           <SpeakButton text={message.content} />

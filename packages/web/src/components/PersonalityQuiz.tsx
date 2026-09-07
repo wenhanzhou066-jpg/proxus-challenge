@@ -134,7 +134,7 @@ export function PersonalityQuiz({ onComplete, onSkip }: Props) {
             disabled={!canGoBack}
             className="text-sm text-slate-500 transition hover:text-slate-200 disabled:cursor-not-allowed disabled:opacity-30"
           >
-            ← Back
+            ← Volver
           </button>
           <span className="font-mono text-xs uppercase tracking-widest text-slate-500">
             {idx + 1} / {TETRADS.length}
@@ -144,7 +144,7 @@ export function PersonalityQuiz({ onComplete, onSkip }: Props) {
             onClick={onSkip}
             className="text-sm text-slate-500 underline transition hover:text-slate-200"
           >
-            Skip
+            Saltar
           </button>
         </div>
         <div className="h-1 bg-slate-900">
@@ -162,7 +162,7 @@ export function PersonalityQuiz({ onComplete, onSkip }: Props) {
           }`}
         >
           <p className="text-center text-xs uppercase tracking-[0.3em] text-slate-500">
-            Scenario {idx + 1}
+            Escenario {idx + 1}
           </p>
           <h1 className="mt-4 text-center text-2xl font-semibold leading-snug text-slate-100 sm:text-3xl">
             {tetrad.prompt}
@@ -170,18 +170,18 @@ export function PersonalityQuiz({ onComplete, onSkip }: Props) {
           <p className="mt-6 text-center text-base text-slate-400">
             {step === "most" ? (
               <>
-                Which response is{" "}
-                <span className="font-bold text-emerald-400">most</span> like you?
+                ¿Qué respuesta se parece{" "}
+                <span className="font-bold text-emerald-400">más</span> a ti?
               </>
             ) : (
               <>
-                Which is{" "}
-                <span className="font-bold text-rose-400">least</span> like you?
+                ¿Cuál se parece{" "}
+                <span className="font-bold text-rose-400">menos</span> a ti?
               </>
             )}
           </p>
           <p className="mt-1 text-center text-xs text-slate-600">
-            Tap a card — or press 1–4
+            Toca una tarjeta — o pulsa 1–4
           </p>
 
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
@@ -229,7 +229,7 @@ function ResultScreen({ profile, onContinue }: ResultProps) {
       </div>
 
       <div className="relative mx-auto max-w-3xl px-6 py-16">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Your profile</p>
+        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Tu perfil</p>
         <h1 className="mt-3 text-6xl font-black sm:text-7xl">
           <span
             className={`bg-gradient-to-r bg-clip-text text-transparent ${getColorGradient(profile.primary, cvd)}`}
@@ -242,7 +242,7 @@ function ResultScreen({ profile, onContinue }: ResultProps) {
           {profile.secondary !== null && (
             <>
               {" "}
-              <span className="text-slate-500">with</span>{" "}
+              <span className="text-slate-500">con</span>{" "}
               <span style={{ color: getColorHex(profile.secondary, cvd) }}>
                 {COLOR_SYMBOL[profile.secondary]} {COLOR_LABEL[profile.secondary]}
               </span>
@@ -252,7 +252,7 @@ function ResultScreen({ profile, onContinue }: ResultProps) {
 
         <section className="mt-12">
           <h2 className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
-            Your profile mix
+            Tu mezcla de perfil
           </h2>
           <div className="space-y-4">
             {COLORS.map((color) => (
@@ -276,10 +276,10 @@ function ResultScreen({ profile, onContinue }: ResultProps) {
 
         <section className="mt-12 rounded-2xl border border-slate-800 bg-slate-900/60 p-6">
           <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500">
-            Recommended study methods
+            Métodos de estudio recomendados
           </h2>
           <p className="mt-1 text-sm text-slate-400">
-            Tuned for {COLOR_LABEL[profile.primary]} learners.
+            Ajustado para perfiles {COLOR_LABEL[profile.primary]}.
           </p>
           <div className="mt-5 grid gap-2 sm:grid-cols-2">
             {COLOR_METHODS[profile.primary].map((method) => (
@@ -296,7 +296,7 @@ function ResultScreen({ profile, onContinue }: ResultProps) {
           </div>
           {profile.secondary !== null && (
             <p className="mt-4 text-xs text-slate-500">
-              Also worth trying (from your {COLOR_LABEL[profile.secondary]} side):{" "}
+              También merece la pena probar (desde tu lado {COLOR_LABEL[profile.secondary]}):{" "}
               <span className="text-slate-300">
                 {COLOR_METHODS[profile.secondary].slice(0, 2).join(" · ")}
               </span>
@@ -309,7 +309,7 @@ function ResultScreen({ profile, onContinue }: ResultProps) {
           onClick={onContinue}
           className="mt-10 w-full rounded-2xl bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-rose-500 px-6 py-4 text-base font-bold text-white shadow-2xl shadow-fuchsia-500/30 transition hover:scale-[1.02]"
         >
-          Start studying →
+          Empezar a estudiar →
         </button>
       </div>
     </div>

@@ -51,14 +51,14 @@ export function StudySession({ materialId, materialName, questions, strategy, on
   if (question === undefined) {
     return (
       <section className="mx-auto grid max-w-2xl gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-6 text-center">
-        <h3 className="font-bold text-slate-100 text-xl">Session complete</h3>
-        <p className="text-slate-400 text-sm">All questions reviewed. Come back tomorrow — SRS will surface what's due.</p>
+        <h3 className="font-bold text-slate-100 text-xl">Sesión completada</h3>
+        <p className="text-slate-400 text-sm">Todas las preguntas revisadas. Vuelve mañana — el SRS te mostrará lo que toca repasar.</p>
         <button
           type="button"
           onClick={onExit}
           className="mx-auto rounded-full bg-sky-500 px-6 py-2 font-bold text-slate-950 text-sm transition hover:bg-sky-400"
         >
-          Back to menu
+          Volver al menú
         </button>
       </section>
     );
@@ -80,7 +80,7 @@ export function StudySession({ materialId, materialName, questions, strategy, on
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="min-w-0">
-          <p className="font-bold text-sky-400 text-xs uppercase tracking-widest">Socratic session</p>
+          <p className="font-bold text-sky-400 text-xs uppercase tracking-widest">Sesión socrática</p>
           <p className="truncate text-slate-400 text-xs">{materialName}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -92,7 +92,7 @@ export function StudySession({ materialId, materialName, questions, strategy, on
             onClick={onExit}
             className="rounded-full border border-slate-700 px-3 py-1 text-slate-300 text-xs hover:border-slate-500"
           >
-            Exit
+            Salir
           </button>
         </div>
       </div>
@@ -100,7 +100,7 @@ export function StudySession({ materialId, materialName, questions, strategy, on
       {/* Predict phase */}
       {phase === "predict" && (
         <PredictionPrompt
-          prompt="Before you see the question, jot down what you already think you know about this topic."
+          prompt="Antes de ver la pregunta, apunta lo que crees que ya sabes sobre este tema."
           onCommit={(text) => {
             setPrediction(text);
             setPhase("question");
@@ -115,7 +115,7 @@ export function StudySession({ materialId, materialName, questions, strategy, on
 
           {prediction.length > 0 && (
             <details className="rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-slate-400 text-xs">
-              <summary className="cursor-pointer">Your prediction</summary>
+              <summary className="cursor-pointer">Tu predicción</summary>
               <p className="mt-2 whitespace-pre-wrap text-slate-300">{prediction}</p>
             </details>
           )}
@@ -138,7 +138,7 @@ export function StudySession({ materialId, materialName, questions, strategy, on
                   onClick={() => setRevealedHints((n) => n + 1)}
                   className="rounded-full border border-amber-500/50 bg-amber-500/10 px-3 py-1 text-amber-200 text-xs hover:bg-amber-500/20"
                 >
-                  I'm stuck — hint {revealedHints + 1}/{totalHints}
+                  Estoy atascado — pista {revealedHints + 1}/{totalHints}
                 </button>
               )}
               <button
@@ -146,7 +146,7 @@ export function StudySession({ materialId, materialName, questions, strategy, on
                 onClick={() => setPhase("feynman")}
                 className="rounded-full bg-sky-500 px-4 py-1.5 font-semibold text-slate-950 text-xs transition hover:bg-sky-400"
               >
-                Explain it →
+                Explícalo →
               </button>
               {onEscape !== undefined && (
                 <button
@@ -154,7 +154,7 @@ export function StudySession({ materialId, materialName, questions, strategy, on
                   onClick={() => onEscape(question, attempt)}
                   className="rounded-full border border-slate-700 px-3 py-1 text-slate-400 text-xs hover:border-fuchsia-400 hover:text-fuchsia-300"
                 >
-                  I'm really stuck (ask tutor)
+                  Muy atascado (preguntar al tutor)
                 </button>
               )}
             </div>
@@ -163,7 +163,7 @@ export function StudySession({ materialId, materialName, questions, strategy, on
           {phase === "feynman" && (
             <div className="grid gap-2">
               <p className="text-slate-400 text-xs">
-                Teach it back — explain in your own words. Timer is {strategy.feynmanHardStop ? "hard-stop" : "soft"}.
+                Enséñalo tú — explícalo con tus propias palabras. El temporizador es {strategy.feynmanHardStop ? "estricto" : "flexible"}.
               </p>
               <FeynmanTimer
                 totalSeconds={strategy.feynmanSeconds}
@@ -185,16 +185,16 @@ export function StudySession({ materialId, materialName, questions, strategy, on
                   }`}
                 >
                   <span aria-hidden>{passed ? passPalette.icon : failPalette.icon}</span>
-                  {Math.round(grade.coverage * 100)}% coverage — {passed ? "passed" : "review"}
+                  {Math.round(grade.coverage * 100)}% de cobertura — {passed ? "aprobado" : "a repasar"}
                 </span>
                 <span className="text-slate-500 text-xs">
-                  target ≥ {Math.round(strategy.passThreshold * 100)}%
+                  objetivo ≥ {Math.round(strategy.passThreshold * 100)}%
                 </span>
               </div>
 
               {grade.covered.length > 0 && (
                 <div>
-                  <p className={`mb-1 font-semibold text-xs uppercase tracking-wider ${passPalette.text}`}>{passPalette.icon} Covered</p>
+                  <p className={`mb-1 font-semibold text-xs uppercase tracking-wider ${passPalette.text}`}>{passPalette.icon} Cubierto</p>
                   <ul className="grid gap-0.5 text-slate-300 text-sm">
                     {grade.covered.map((p, i) => <li key={i}>{passPalette.icon} {p}</li>)}
                   </ul>
@@ -203,7 +203,7 @@ export function StudySession({ materialId, materialName, questions, strategy, on
 
               {grade.missing.length > 0 && (
                 <div>
-                  <p className={`mb-1 font-semibold text-xs uppercase tracking-wider ${failPalette.text}`}>{failPalette.icon} Missed — go back to these</p>
+                  <p className={`mb-1 font-semibold text-xs uppercase tracking-wider ${failPalette.text}`}>{failPalette.icon} Falta — vuelve a esto</p>
                   <ul className="grid gap-0.5 text-slate-300 text-sm">
                     {grade.missing.map((p, i) => <li key={i}>{failPalette.icon} {p}</li>)}
                   </ul>
@@ -211,12 +211,12 @@ export function StudySession({ materialId, materialName, questions, strategy, on
               )}
 
               <details className="rounded-lg border border-slate-800 bg-slate-950/60 px-3 py-2 text-slate-400 text-xs">
-                <summary className="cursor-pointer">Your explanation</summary>
+                <summary className="cursor-pointer">Tu explicación</summary>
                 <p className="mt-2 whitespace-pre-wrap text-slate-300">{attempt}</p>
               </details>
 
               <div className="flex flex-wrap items-center gap-2 border-slate-800 border-t pt-3">
-                <span className="text-slate-500 text-xs mr-auto">Grader is approximate — override if needed:</span>
+                <span className="text-slate-500 text-xs mr-auto">La corrección es aproximada — sobrescribe si hace falta:</span>
                 <button
                   type="button"
                   onClick={() => overrideOutcome(false)}
@@ -226,7 +226,7 @@ export function StudySession({ materialId, materialName, questions, strategy, on
                       : "border-slate-700 text-slate-400 hover:border-slate-500"
                   }`}
                 >
-                  <span aria-hidden>{failPalette.icon}</span> I missed it
+                  <span aria-hidden>{failPalette.icon}</span> Me equivoqué
                 </button>
                 <button
                   type="button"
@@ -237,14 +237,14 @@ export function StudySession({ materialId, materialName, questions, strategy, on
                       : "border-slate-700 text-slate-400 hover:border-slate-500"
                   }`}
                 >
-                  <span aria-hidden>{passPalette.icon}</span> I got it
+                  <span aria-hidden>{passPalette.icon}</span> Lo tenía
                 </button>
                 <button
                   type="button"
                   onClick={() => goToQuestion(index + 1)}
                   className="rounded-full bg-sky-500 px-4 py-1 font-semibold text-slate-950 text-xs transition hover:bg-sky-400"
                 >
-                  Next →
+                  Siguiente →
                 </button>
               </div>
             </div>

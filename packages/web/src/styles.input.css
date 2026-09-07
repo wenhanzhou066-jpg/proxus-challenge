@@ -4,64 +4,75 @@
 @source "../node_modules/streamdown/dist/*.js";
 
 @theme {
-  --color-slate-50:  #F0EEE6;
-  --color-slate-100: #E8E6E1;
-  --color-slate-200: #D8D5CC;
-  --color-slate-300: #C4C0B7;
-  --color-slate-400: #A29E96;
-  --color-slate-500: #7A7669;
-  --color-slate-600: #5E5A54;
-  --color-slate-700: #47443F;
-  --color-slate-800: #33322F;
-  --color-slate-900: #262624;
-  --color-slate-950: #1F1E1D;
+  /* Neutral scale — violet-tinted dark (proxus.es) */
+  --color-slate-50:  #ECEBFF;
+  --color-slate-100: #DCD9F5;
+  --color-slate-200: #C7CBD6;
+  --color-slate-300: #A5A3C2;
+  --color-slate-400: #959CAD;
+  --color-slate-500: #6E6B8A;
+  --color-slate-600: #4A4766;
+  --color-slate-700: #2A2640;
+  --color-slate-800: #1E1B2E;
+  --color-slate-900: #0B0B11;
+  --color-slate-950: #040212;
 
-  --color-sky-50:  #FDECDF;
-  --color-sky-100: #F9D5C1;
-  --color-sky-200: #F3B598;
-  --color-sky-300: #EB9877;
-  --color-sky-400: #E07D5A;
-  --color-sky-500: #C96442;
-  --color-sky-600: #A94F30;
-  --color-sky-700: #883E24;
-  --color-sky-800: #66301C;
-  --color-sky-900: #4A2416;
-  --color-sky-950: #2A1810;
+  /* Accent scale — brand violet */
+  --color-sky-50:  #F1ECFF;
+  --color-sky-100: #E3D6FF;
+  --color-sky-200: #C4B5FD;
+  --color-sky-300: #A88BFB;
+  --color-sky-400: #9A66FF;
+  --color-sky-500: #793EF9;
+  --color-sky-600: #6A2FE3;
+  --color-sky-700: #5722BF;
+  --color-sky-800: #401A8F;
+  --color-sky-900: #2A1063;
+  --color-sky-950: #170733;
 }
 
 @layer base {
   :root {
     color-scheme: dark;
 
-    /* Semantic surface tokens (dark theme default) */
-    --surface-0: #1F1E1D;          /* app background */
-    --surface-1: #262624;          /* cards, panels */
-    --surface-2: #33322F;          /* hover, elevated */
-    --surface-3: #47443F;          /* deepest elevated */
+    /* Semantic surface tokens — proxus.es violet-dark */
+    --surface-0: #040212;          /* app background — deepest violet-black */
+    --surface-1: #0B0B11;          /* cards, panels */
+    --surface-2: #14121F;          /* hover, elevated */
+    --surface-3: #1E1B2E;          /* deepest elevated */
 
     /* Borders */
-    --border-subtle: #33322F;
-    --border-strong: #47443F;
-    --border-accent: #C96442;
+    --border-subtle: #1E1B2E;
+    --border-strong: #2A2640;
+    --border-accent: #793EF9;
 
     /* Text */
-    --text-primary:   #E8E6E1;
-    --text-secondary: #A29E96;
-    --text-muted:     #7A7669;
+    --text-primary:   #ECEBFF;
+    --text-secondary: #C7CBD6;
+    --text-muted:     #959CAD;
 
-    /* Accents */
-    --accent:         #C96442;
-    --accent-hover:   #E07D5A;
-    --accent-soft:    rgba(201, 100, 66, 0.15);
+    /* Accents — brand violet primary, cyan secondary */
+    --accent:         #793EF9;
+    --accent-hover:   #9A66FF;
+    --accent-soft:    rgba(121, 62, 249, 0.16);
 
-    --danger:         #E11D48;
-    --danger-soft:    rgba(225, 29, 72, 0.15);
+    --accent-2:       #72DAF7;     /* cyan highlight */
+    --accent-2-soft:  rgba(114, 218, 247, 0.15);
 
-    /* Reading-area canvas (PDF viewer, etc.) — warm dark taupe */
-    --pdf-canvas: #2E2B28;
+    --success:        #10B981;
+    --success-soft:   rgba(16, 185, 129, 0.15);
+
+    --danger:         #EF4444;
+    --danger-soft:    rgba(239, 68, 68, 0.15);
+
+    /* Reading-area canvas (PDF viewer, etc.) — soft violet-dark */
+    --pdf-canvas: #14121F;
 
     /* Focus ring — universal */
     --ring-color: var(--accent);
+
+    /* Brand wordmark font (proxus.es uses Montserrat) */
+    --font-brand: "Montserrat", ui-sans-serif, system-ui, sans-serif;
 
     /* Standard button sizes */
     --btn-sm: 1.75rem; /* 28px */

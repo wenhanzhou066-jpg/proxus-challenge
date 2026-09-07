@@ -1,17 +1,17 @@
 export type Color = "R" | "Y" | "G" | "B";
 
 export const COLOR_LABEL: Record<Color, string> = {
-  R: "Red",
-  Y: "Yellow",
-  G: "Green",
-  B: "Blue"
+  R: "Rojo",
+  Y: "Amarillo",
+  G: "Verde",
+  B: "Azul"
 };
 
 export const COLOR_TRAIT: Record<Color, string> = {
-  R: "Dominant",
-  Y: "Inspiring",
-  G: "Steady",
-  B: "Analytical"
+  R: "Dominante",
+  Y: "Inspirador",
+  G: "Constante",
+  B: "Analítico"
 };
 
 export const COLOR_HEX: Record<Color, string> = {
@@ -77,10 +77,10 @@ export function getColorGradient(color: Color, cvd: CvdMode): string {
 }
 
 export const COLOR_METHODS: Record<Color, ReadonlyArray<string>> = {
-  R: ["Timed challenges", "Goal streaks", "Rapid-fire quizzes", "Leaderboards"],
-  Y: ["Interactive flashcards", "Visual mind-maps", "Study groups", "Gamified quests"],
-  G: ["Spaced repetition", "Structured summaries", "Steady daily plan", "Guided reviews"],
-  B: ["Deep-dive summaries", "Detailed notes", "Structured tests", "Concept trees"]
+  R: ["Retos cronometrados", "Rachas de objetivos", "Cuestionarios rápidos", "Tablas de clasificación"],
+  Y: ["Tarjetas interactivas", "Mapas mentales visuales", "Grupos de estudio", "Retos gamificados"],
+  G: ["Repetición espaciada", "Resúmenes estructurados", "Plan diario constante", "Repasos guiados"],
+  B: ["Resúmenes en profundidad", "Notas detalladas", "Exámenes estructurados", "Árboles de conceptos"]
 };
 
 export type UserMode = "free" | "guided";

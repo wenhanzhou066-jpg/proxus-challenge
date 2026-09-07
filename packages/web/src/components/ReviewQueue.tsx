@@ -34,7 +34,7 @@ export function ReviewQueue({ materials, onStartReview }: Props) {
     <section className={`grid gap-2 rounded-2xl border p-4 ${palette.border} ${palette.softBg}`}>
       <div className="flex items-center justify-between">
         <h3 className={`font-bold text-xs uppercase tracking-widest ${palette.text}`}>
-          {palette.icon} Review due · {totalDue}
+          {palette.icon} Repasos pendientes · {totalDue}
         </h3>
       </div>
       <ul className="grid gap-1.5">
@@ -47,7 +47,7 @@ export function ReviewQueue({ materials, onStartReview }: Props) {
             >
               <span className="min-w-0 flex-1 truncate text-slate-100 text-sm">{material.name}</span>
               <span className={`shrink-0 rounded-full px-2 py-0.5 font-semibold text-xs tabular-nums ${palette.softBg} ${palette.text}`}>
-                {dueIds.length} due
+                {dueIds.length} pendientes
               </span>
             </button>
           </li>

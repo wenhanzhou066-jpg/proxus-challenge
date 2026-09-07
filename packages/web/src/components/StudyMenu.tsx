@@ -20,39 +20,39 @@ interface StudyOption {
 const CORE_OPTIONS: ReadonlyArray<StudyOption> = [
   {
     id: "schema",
-    title: "Schema / Diagram",
-    description: "Visual map of the key concepts and how they connect.",
-    prompt: "Build a schema-style diagram of the main concepts from my materials. Use an ASCII/markdown tree or table format that shows the hierarchy and relationships clearly."
+    title: "Esquema / Diagrama",
+    description: "Mapa visual de los conceptos clave y cómo se conectan.",
+    prompt: "Construye un diagrama en formato esquema de los conceptos principales de mis materiales. Usa un árbol o tabla ASCII/markdown que muestre la jerarquía y las relaciones con claridad."
   },
   {
     id: "summary",
-    title: "Summary",
-    description: "Compact overview of the essentials.",
-    prompt: "Write a compact summary of my materials. Cover the key ideas, structure it with headings, and highlight what's essential vs. supporting detail."
+    title: "Resumen",
+    description: "Visión compacta de lo esencial.",
+    prompt: "Escribe un resumen compacto de mis materiales. Cubre las ideas clave, estructúralo con encabezados y destaca lo esencial frente al detalle de apoyo."
   },
   {
     id: "quiz",
-    title: "Quiz me",
-    description: "Test yourself with generated questions.",
-    prompt: "Generate a short quiz (5 questions) covering the most important concepts in my materials. Mix multiple-choice and short-answer."
+    title: "Ponme un cuestionario",
+    description: "Ponte a prueba con preguntas generadas.",
+    prompt: "Genera un cuestionario corto (5 preguntas) que cubra los conceptos más importantes de mis materiales. Mezcla opción múltiple y respuesta corta."
   },
   {
     id: "flashcards",
-    title: "Flashcards",
-    description: "Bite-sized Q/A pairs for spaced repetition.",
-    prompt: "Create 10 flashcards from my materials in Q → A format. Keep each answer under two sentences."
+    title: "Tarjetas",
+    description: "Pares breves pregunta/respuesta para repetición espaciada.",
+    prompt: "Crea 10 tarjetas a partir de mis materiales en formato P → R. Mantén cada respuesta en menos de dos frases."
   },
   {
     id: "concept-map",
-    title: "Concept map",
-    description: "Structured tree of ideas and dependencies.",
-    prompt: "Draw a concept map (as an indented tree) of the topics in my materials, showing which ideas depend on which."
+    title: "Mapa conceptual",
+    description: "Árbol estructurado de ideas y dependencias.",
+    prompt: "Dibuja un mapa conceptual (como árbol indentado) de los temas de mis materiales, mostrando qué ideas dependen de cuáles."
   },
   {
     id: "walkthrough",
-    title: "Step-by-step",
-    description: "Walk me through the hardest topic slowly.",
-    prompt: "Pick the hardest concept in my materials and explain it step by step, from first principles. Assume I'm new to it."
+    title: "Paso a paso",
+    description: "Explícame despacio el tema más difícil.",
+    prompt: "Elige el concepto más difícil de mis materiales y explícamelo paso a paso, desde primeros principios. Asume que es nuevo para mí."
   }
 ];
 
@@ -98,18 +98,18 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
       : currentAssignment.materials.filter((material) => material.tags.includes(activeTag));
 
   const greeting = currentAssignment !== null
-    ? `Ready to work on ${currentAssignment.title}?`
+    ? `¿Listo para trabajar en ${currentAssignment.title}?`
     : profile !== null
-      ? `Welcome back, ${COLOR_LABEL[profile.primary]} learner.`
-      : "Welcome.";
+      ? `Bienvenido de nuevo, perfil ${COLOR_LABEL[profile.primary]}.`
+      : "Bienvenido.";
 
   const subtitle = currentAssignment !== null
     ? currentAssignment.description.length > 0
       ? currentAssignment.description
       : strategy.tagline
     : hasAssignments
-      ? "Pick an assignment above to scope the session, then choose a method."
-      : "Create an assignment above to get started. Each one keeps its own materials and progress.";
+      ? "Elige una tarea arriba para acotar la sesión y luego escoge un método."
+      : "Crea una tarea arriba para empezar. Cada una guarda sus propios materiales y progreso.";
 
   return (
     <div className="mx-auto w-full max-w-4xl">
@@ -129,7 +129,7 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
               onClick={onOpenCreateAssignment}
               className="mt-4 rounded-full bg-sky-500 px-6 py-2.5 font-bold text-slate-950 tracking-wide shadow-lg shadow-sky-500/20 transition hover:bg-sky-400"
             >
-              Create your first assignment
+              Crea tu primera tarea
             </button>
           )}
         </div>
@@ -139,10 +139,10 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
         <section className="mt-6 rounded-2xl border border-slate-800 bg-slate-950/40 p-4">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">
-              Materials in this assignment
+              Materiales de esta tarea
             </h3>
             <span className="text-slate-500 text-xs">
-              {filteredMaterials.length} of {currentAssignment.materials.length}
+              {filteredMaterials.length} de {currentAssignment.materials.length}
             </span>
           </div>
 
@@ -157,7 +157,7 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
                     : "border-slate-700 text-slate-400 hover:border-sky-500 hover:text-sky-200"
                 }`}
               >
-                All
+                Todos
               </button>
               {allTags.map((tag) => {
                 const active = tag === activeTag;
@@ -192,7 +192,7 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
           </ul>
 
           {filteredMaterials.length === 0 && (
-            <p className="mt-3 text-slate-500 text-sm">No materials with that tag.</p>
+            <p className="mt-3 text-slate-500 text-sm">No hay materiales con esa etiqueta.</p>
           )}
         </section>
       )}
@@ -212,7 +212,7 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
       )}
 
       <div className="mt-8 grid gap-2">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Quick chat</h3>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">Chat rápido</h3>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {CORE_OPTIONS.map((option) => (
             <button
@@ -231,14 +231,14 @@ export function StudyMenu({ profile, currentAssignment = null, hasAssignments = 
       {profile !== null && (
         <section className="mt-10">
           <h3 className="text-xs font-bold uppercase tracking-widest text-slate-500">
-            Tuned for your {COLOR_LABEL[profile.primary]} profile
+            Ajustado para tu perfil {COLOR_LABEL[profile.primary]}
           </h3>
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
             {COLOR_METHODS[profile.primary].map((method) => (
               <button
                 key={method}
                 type="button"
-                onClick={() => onPick(`Use "${method}" to help me study my materials. Design a short session that fits that method.`)}
+                onClick={() => onPick(`Usa "${method}" para ayudarme a estudiar mis materiales. Diseña una sesión corta que encaje con ese método.`)}
                 className="group relative overflow-hidden rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3 text-left transition hover:border-sky-400 focus-visible:border-sky-400 focus-visible:outline-none"
               >
                 <div
@@ -295,7 +295,7 @@ function MaterialRow({ material, onPreview, onStartSession, ctaLabel }: Material
 
       {onStartSession !== undefined && status.kind === "ready" && questionCount > 0 && (
         <div className="flex items-center justify-between border-slate-800 border-t pt-2">
-          <span className="text-slate-500 text-xs">{questionCount} conceptual questions ready</span>
+          <span className="text-slate-500 text-xs">{questionCount} preguntas conceptuales listas</span>
           <button
             type="button"
             onClick={onStartSession}
@@ -311,13 +311,13 @@ function MaterialRow({ material, onPreview, onStartSession, ctaLabel }: Material
 
 function StatusBadge({ status, onRetry }: { status: "idle" | "running" | "ready" | "failed"; onRetry: () => void }) {
   if (status === "ready") {
-    return <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 font-semibold text-emerald-300 text-[10px] uppercase">Ready</span>;
+    return <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 font-semibold text-emerald-300 text-[10px] uppercase">Listo</span>;
   }
   if (status === "running") {
     return (
       <span className="flex items-center gap-1 rounded-full bg-sky-500/15 px-2 py-0.5 font-semibold text-sky-300 text-[10px] uppercase">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sky-300" />
-        Analyzing
+        Analizando
       </span>
     );
   }
@@ -326,10 +326,10 @@ function StatusBadge({ status, onRetry }: { status: "idle" | "running" | "ready"
       <button
         type="button"
         onClick={onRetry}
-        title="Retry analysis"
+        title="Reintentar análisis"
         className="rounded-full bg-rose-500/15 px-2 py-0.5 font-semibold text-rose-300 text-[10px] uppercase hover:bg-rose-500/25"
       >
-        Retry
+        Reintentar
       </button>
     );
   }
@@ -339,7 +339,7 @@ function StatusBadge({ status, onRetry }: { status: "idle" | "running" | "ready"
       onClick={onRetry}
       className="rounded-full bg-slate-800 px-2 py-0.5 font-semibold text-slate-400 text-[10px] uppercase hover:bg-slate-700"
     >
-      Analyze
+      Analizar
     </button>
   );
 }

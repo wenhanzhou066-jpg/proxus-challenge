@@ -24,7 +24,7 @@ export function FeynmanTimer({
   hardStop,
   allowPause = true,
   onSubmit,
-  placeholder = "Explain in your own words — as if teaching a curious 12-year-old."
+  placeholder = "Explícalo con tus propias palabras — como si se lo enseñaras a un niño curioso de 12 años."
 }: Props) {
   const [text, setText] = useState("");
   const [remainingMs, setRemainingMs] = useState(totalSeconds * 1000);
@@ -79,7 +79,7 @@ export function FeynmanTimer({
               onClick={() => setPaused((p) => !p)}
               className="rounded-md border border-slate-700 px-2 py-0.5 text-slate-300 text-xs hover:border-sky-400"
             >
-              {paused ? "Resume" : "Pause"}
+              {paused ? "Reanudar" : "Pausar"}
             </button>
           )}
           <button
@@ -91,7 +91,7 @@ export function FeynmanTimer({
             }}
             className="rounded-md bg-sky-500 px-3 py-0.5 font-semibold text-slate-950 text-xs transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500"
           >
-            Done
+            Hecho
           </button>
         </div>
       </div>

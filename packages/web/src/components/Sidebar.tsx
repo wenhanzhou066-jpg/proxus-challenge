@@ -114,18 +114,26 @@ export function Sidebar({
     >
     <div className="flex-1 overflow-y-auto px-3 py-5">
       <div className="mb-8 flex items-center gap-3">
-        <div className="grid size-10 place-items-center rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 font-extrabold text-white">
-          P
+        <div className="flex items-center gap-1.5">
+          <img
+            src="/proxus-mark.webp"
+            alt=""
+            aria-hidden
+            className="h-7 w-auto shrink-0"
+          />
+          <span
+            className="font-bold text-2xl text-slate-50 leading-none"
+            style={{ fontFamily: "var(--font-brand)", letterSpacing: "0.14em" }}
+          >
+            PROXUS
+          </span>
         </div>
-        <div className="min-w-0 flex-1">
-          <strong className="block text-slate-100">Proxus Tutor</strong>
-          <span className="block text-slate-400 text-sm">Academic assistant</span>
-        </div>
+        <div className="min-w-0 flex-1" />
         {onToggleCollapse !== undefined && (
           <button
             type="button"
             onClick={onToggleCollapse}
-            title="Hide sidebar"
+            title="Ocultar barra lateral"
             className="grid size-8 shrink-0 place-items-center rounded-full border border-slate-700 text-slate-400 transition hover:border-sky-400 hover:bg-sky-500/15 hover:text-sky-300"
           >
             <PanelLeft size={18} aria-hidden />
@@ -136,7 +144,7 @@ export function Sidebar({
       {showAssignments && (
         <section className="mb-6 px-2">
           <div className="mb-3 flex items-center justify-between gap-2">
-            <h2 className="font-semibold text-slate-300 text-sm uppercase tracking-widest">Assignments</h2>
+            <h2 className="font-semibold text-slate-300 text-sm uppercase tracking-widest">Tareas</h2>
             {selectionMode ? (
               <div className="flex items-center gap-1">
                 <button
@@ -176,8 +184,8 @@ export function Sidebar({
                 <button
                   type="button"
                   onClick={onOpenCreateAssignment}
-                  title="Nueva asignatura"
-                  aria-label="Nueva asignatura"
+                  title="Nueva tarea"
+                  aria-label="Nueva tarea"
                   className="grid size-7 shrink-0 place-items-center rounded-full border border-slate-700 text-slate-300 transition hover:border-sky-400 hover:bg-sky-500/15 hover:text-sky-300 focus-visible:border-sky-400 focus-visible:outline-none"
                 >
                   <Plus size={16} strokeWidth={2.2} aria-hidden />
@@ -186,7 +194,7 @@ export function Sidebar({
             )}
           </div>
           {assignments.length === 0 ? (
-            <p className="text-slate-400 text-sm">Create one to start a chat scoped to a subject.</p>
+            <p className="text-slate-400 text-sm">Crea una para iniciar un chat centrado en una asignatura.</p>
           ) : (
             <ul className="grid gap-0.5">
               {assignments.map((assignment) => {
@@ -246,7 +254,7 @@ export function Sidebar({
                                 ? "bg-slate-700 text-slate-100 opacity-100"
                                 : "text-slate-500 opacity-0 group-hover:opacity-100 hover:bg-slate-700 hover:text-slate-100 focus-visible:opacity-100"
                             }`}
-                            aria-label="Assignment options"
+                            aria-label="Opciones de la tarea"
                             aria-haspopup="true"
                             aria-expanded={menuOpen}
                           >
@@ -263,7 +271,7 @@ export function Sidebar({
                                 onClick={(e) => { e.stopPropagation(); startRename(assignment); }}
                                 className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-slate-200 text-sm transition hover:bg-slate-800"
                               >
-                                Rename
+                                Renombrar
                               </button>
                               {onDeleteAssignment !== undefined && (
                                 <button
@@ -275,7 +283,7 @@ export function Sidebar({
                                   }}
                                   className="flex w-full items-center gap-2 px-4 py-2.5 text-left text-rose-300 text-sm transition hover:bg-slate-800"
                                 >
-                                  Delete
+                                  Eliminar
                                 </button>
                               )}
                             </div>
@@ -293,24 +301,24 @@ export function Sidebar({
 
       <section className="mb-6">
         <div className="mb-3 flex items-center justify-between gap-4">
-          <h2 className="font-semibold text-slate-300 text-sm uppercase tracking-widest">Materials</h2>
+          <h2 className="font-semibold text-slate-300 text-sm uppercase tracking-widest">Materiales</h2>
         </div>
         {AsyncResult.matchWithError(materials, {
-          onInitial: () => <p className="text-slate-400">Loading materials…</p>,
+          onInitial: () => <p className="text-slate-400">Cargando materiales…</p>,
           onError: (error) => <p className="text-red-200">{String(error)}</p>,
           onDefect: (defect) => <p className="text-red-200">{String(defect)}</p>,
           onSuccess: ({ value }) => value.materials.length === 0
-            ? <p className="text-slate-400">No uploaded PDFs yet.</p>
+            ? <p className="text-slate-400">Aún no has subido PDFs.</p>
             : (
                 <details className="rounded-2xl border border-slate-800 bg-slate-900">
                   <summary className="cursor-pointer px-4 py-3 font-medium text-slate-100 marker:text-sky-400">
-                    {value.materials.length} material{value.materials.length === 1 ? "" : "s"}
+                    {value.materials.length} material{value.materials.length === 1 ? "" : "es"}
                   </summary>
                   <ul className="grid gap-2 border-slate-800 border-t p-3">
                     {value.materials.map((material) => (
                       <li className="rounded-xl bg-slate-950/70 p-3" key={material.id}>
                         <strong className="block text-slate-100">{material.title}</strong>
-                        <span className="mt-1 block text-slate-400 text-sm">{material.pageCount} pages · {material.fileName}</span>
+                        <span className="mt-1 block text-slate-400 text-sm">{material.pageCount} páginas · {material.fileName}</span>
                       </li>
                     ))}
                   </ul>
@@ -321,14 +329,14 @@ export function Sidebar({
 
       <section className="mb-6">
         <div className="mb-3 flex items-center justify-between gap-4">
-          <h2 className="font-semibold text-slate-300 text-sm uppercase tracking-widest">Artifacts</h2>
+          <h2 className="font-semibold text-slate-300 text-sm uppercase tracking-widest">Artefactos</h2>
         </div>
         {AsyncResult.matchWithError(artifacts, {
-          onInitial: () => <p className="text-slate-400">Loading artifacts…</p>,
+          onInitial: () => <p className="text-slate-400">Cargando artefactos…</p>,
           onError: (error) => <p className="text-red-200">{String(error)}</p>,
           onDefect: (defect) => <p className="text-red-200">{String(defect)}</p>,
           onSuccess: ({ value }) => value.artifacts.length === 0
-            ? <p className="text-slate-400">No notes, quizzes, or tests yet.</p>
+            ? <p className="text-slate-400">Aún no hay notas, cuestionarios ni exámenes.</p>
             : (
                 <ArtifactFolders
                   artifacts={value.artifacts}
@@ -390,18 +398,18 @@ export function Sidebar({
           className="w-full max-w-[320px] rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl text-center"
           onClick={(e) => e.stopPropagation()}
         >
-          <h2 className="font-bold text-slate-100 text-base">Delete assignment?</h2>
+          <h2 className="font-bold text-slate-100 text-base">¿Eliminar tarea?</h2>
           <p className="mt-2 text-slate-400 text-sm">
             "<span className="font-semibold text-slate-200">{deletingAssignment.title}</span>"
           </p>
-          <p className="mt-1 text-rose-400 text-xs font-medium">This action is irreversible.</p>
+          <p className="mt-1 text-rose-400 text-xs font-medium">Esta acción es irreversible.</p>
           <div className="mt-5 flex justify-center gap-2">
             <button
               type="button"
               onClick={() => setDeletingId(null)}
               className="rounded-full border border-slate-700 px-4 py-2 text-slate-300 text-sm transition hover:border-slate-500"
             >
-              Cancel
+              Cancelar
             </button>
             <button
               type="button"
@@ -411,7 +419,7 @@ export function Sidebar({
               }}
               className="rounded-full bg-rose-600 px-5 py-2 font-bold text-white text-sm ring-2 ring-rose-500/60 shadow-lg shadow-rose-700/40 transition hover:bg-rose-500 hover:ring-rose-400/70"
             >
-              Delete
+              Eliminar
             </button>
           </div>
         </div>
@@ -431,7 +439,7 @@ export function Sidebar({
           onClick={(e) => e.stopPropagation()}
         >
           <h2 className="font-bold text-slate-100 text-base">
-            ¿Borrar {selectedIds.size} asignatura{selectedIds.size === 1 ? "" : "s"}?
+            ¿Borrar {selectedIds.size} tarea{selectedIds.size === 1 ? "" : "s"}?
           </h2>
           <p className="mt-2 text-slate-400 text-sm">Se eliminarán todos sus chats y materiales asociados.</p>
           <p className="mt-1 text-rose-400 text-xs font-medium">Esta acción es irreversible.</p>
@@ -468,8 +476,8 @@ type ArtifactSummary = { readonly id: string; readonly kind: string; readonly ti
 
 const KIND_META: Record<string, { readonly Icon: typeof FileText; readonly label: string; readonly color: string }> = {
   note: { Icon: FileText, label: "Nota", color: "text-sky-300" },
-  quiz: { Icon: ListChecks, label: "Quiz", color: "text-amber-300" },
-  test: { Icon: ClipboardList, label: "Test", color: "text-fuchsia-300" }
+  quiz: { Icon: ListChecks, label: "Cuestionario", color: "text-amber-300" },
+  test: { Icon: ClipboardList, label: "Examen", color: "text-fuchsia-300" }
 };
 
 function ArtifactFolders({
@@ -505,8 +513,8 @@ function ArtifactFolders({
 
   const folderLabel = (key: string) =>
     key === "unassigned"
-      ? "Sin assignment"
-      : assignmentTitle.get(key.slice("assignment:".length)) ?? "Assignment eliminado";
+      ? "Sin tarea"
+      : assignmentTitle.get(key.slice("assignment:".length)) ?? "Tarea eliminada";
 
   return (
     <ul className="grid gap-1">

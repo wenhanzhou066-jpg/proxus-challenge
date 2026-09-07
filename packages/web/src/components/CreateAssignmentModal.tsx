@@ -43,7 +43,7 @@ export function CreateAssignmentModal({ onClose, onCreate }: Props) {
       const added: Material[] = [];
       for (const file of Array.from(files)) {
         if (!/\.pdf$/i.test(file.name) && file.type !== "application/pdf") {
-          throw new Error(`"${file.name}" isn't a PDF.`);
+          throw new Error(`"${file.name}" no es un PDF.`);
         }
         added.push(await readFileAsMaterial(file));
       }
@@ -90,10 +90,10 @@ export function CreateAssignmentModal({ onClose, onCreate }: Props) {
         <header className="flex shrink-0 items-start justify-between gap-4 border-slate-800 border-b px-6 py-5">
           <div>
             <h2 id="create-assignment-title" className="m-0 font-bold text-slate-100 text-xl">
-              New assignment
+              Nueva tarea
             </h2>
             <p className="mt-1 text-slate-400 text-sm">
-              Each assignment keeps its own materials, chat, and study progress.
+              Cada tarea guarda sus propios materiales, chat y progreso de estudio.
             </p>
           </div>
           <button
@@ -115,31 +115,31 @@ export function CreateAssignmentModal({ onClose, onCreate }: Props) {
         >
         <div className="grid min-h-0 flex-1 gap-4 overflow-y-auto px-6 py-5">
           <label className="grid gap-1.5">
-            <span className="font-semibold text-slate-300 text-sm">Title</span>
+            <span className="font-semibold text-slate-300 text-sm">Título</span>
             <input
               ref={titleRef}
               value={title}
               onChange={(event) => setTitle(event.currentTarget.value)}
-              placeholder="e.g. Programación POO"
+              placeholder="ej. Programación POO"
               className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none focus:border-sky-400"
             />
           </label>
 
           <label className="grid gap-1.5">
-            <span className="font-semibold text-slate-300 text-sm">Goal or notes (optional)</span>
+            <span className="font-semibold text-slate-300 text-sm">Objetivo o notas (opcional)</span>
             <textarea
               value={description}
               onChange={(event) => setDescription(event.currentTarget.value)}
               rows={2}
-              placeholder="e.g. Prep for the final exam on classes, inheritance, polymorphism"
+              placeholder="ej. Preparar el examen final sobre clases, herencia, polimorfismo"
               className="resize-y rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100 outline-none focus:border-sky-400"
             />
           </label>
 
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
-              <span className="font-semibold text-slate-300 text-sm">PDF materials</span>
-              <span className="text-slate-500 text-xs">{materials.length} attached</span>
+              <span className="font-semibold text-slate-300 text-sm">Materiales PDF</span>
+              <span className="text-slate-500 text-xs">{materials.length} adjuntos</span>
             </div>
 
             <label
@@ -179,9 +179,9 @@ export function CreateAssignmentModal({ onClose, onCreate }: Props) {
                 disabled={busy}
               />
               <span className="font-semibold">
-                {busy ? "Reading…" : dragging ? "Drop to add" : "Drop PDFs here or click to browse"}
+                {busy ? "Leyendo…" : dragging ? "Suelta para añadir" : "Arrastra PDFs aquí o haz clic para elegir"}
               </span>
-              <span className="mt-1 text-slate-500 text-xs">Only .pdf files. Stored locally in your browser.</span>
+              <span className="mt-1 text-slate-500 text-xs">Solo archivos .pdf. Se guardan localmente en tu navegador.</span>
             </label>
 
             {materials.length > 0 && (
@@ -213,7 +213,7 @@ export function CreateAssignmentModal({ onClose, onCreate }: Props) {
                     <input
                       value={material.tags.join(", ")}
                       onChange={(event) => updateTags(material.id, event.currentTarget.value)}
-                      placeholder="Tags (comma-separated) — e.g. POO, herencia"
+                      placeholder="Etiquetas (separadas por comas) — ej. POO, herencia"
                       className="rounded-md border border-slate-800 bg-slate-950 px-2 py-1 text-slate-100 text-xs outline-none focus:border-sky-400"
                     />
                     {material.tags.length > 0 && (
@@ -243,14 +243,14 @@ export function CreateAssignmentModal({ onClose, onCreate }: Props) {
               onClick={onClose}
               className="rounded-full border border-slate-700 px-4 py-2 text-slate-300 hover:border-slate-500"
             >
-              Cancel
+              Cancelar
             </button>
             <button
               type="submit"
               disabled={title.trim().length === 0 || busy}
               className="rounded-full bg-sky-500 px-6 py-2.5 font-bold text-slate-950 tracking-wide shadow-lg shadow-sky-500/20 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:bg-slate-800 disabled:text-slate-500 disabled:shadow-none"
             >
-              Create assignment
+              Crear tarea
             </button>
           </div>
         </form>

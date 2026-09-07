@@ -243,7 +243,7 @@ function _PdfPanel({ materials, selectedId, onSelectId, onClose, style, classNam
             }
             error={
               <div className="max-w-xs py-10 text-center text-neutral-300 text-sm">
-                <p className="font-medium text-neutral-100">Could not load PDF</p>
+                <p className="font-medium text-neutral-100">No se pudo cargar el PDF</p>
                 {loadError !== null && <p className="mt-1 text-neutral-400 text-xs break-all">{loadError}</p>}
               </div>
             }
@@ -255,7 +255,7 @@ function _PdfPanel({ materials, selectedId, onSelectId, onClose, style, classNam
                 rotate={rotation}
                 renderAnnotationLayer={!isResizing}
                 renderTextLayer={!isResizing}
-                canvasBackground="#2E2B28"
+                canvasBackground="#14121F"
                 onRenderSuccess={() => setRenderedCanvasWidth(deferredCanvasWidth)}
                 className="shadow-2xl"
               />
@@ -270,7 +270,7 @@ function _PdfPanel({ materials, selectedId, onSelectId, onClose, style, classNam
                     rotate={rotation}
                     renderAnnotationLayer={!isResizing}
                     renderTextLayer={!isResizing}
-                    canvasBackground="#2E2B28"
+                    canvasBackground="#14121F"
                     {...(i === 0 ? { onRenderSuccess: () => setRenderedCanvasWidth(deferredCanvasWidth) } : {})}
                     className="shadow-2xl"
                   />
@@ -288,7 +288,7 @@ function _PdfPanel({ materials, selectedId, onSelectId, onClose, style, classNam
             type="button"
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={!canPrev}
-            title="Previous page"
+            title="Página anterior"
             className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-slate-900/85 text-slate-200 shadow-lg backdrop-blur-sm transition hover:bg-slate-800 hover:text-white disabled:pointer-events-none disabled:opacity-40"
           >
             <svg className="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>
@@ -299,7 +299,7 @@ function _PdfPanel({ materials, selectedId, onSelectId, onClose, style, classNam
             type="button"
             onClick={() => setCurrentPage((p) => Math.min(numPages, p + 1))}
             disabled={!canNext}
-            title="Next page"
+            title="Página siguiente"
             className="pointer-events-auto flex h-9 w-9 items-center justify-center rounded-full bg-slate-900/85 text-slate-200 shadow-lg backdrop-blur-sm transition hover:bg-slate-800 hover:text-white disabled:pointer-events-none disabled:opacity-40"
           >
             <svg className="size-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden>

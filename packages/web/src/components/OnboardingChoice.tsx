@@ -16,30 +16,30 @@ export function OnboardingChoice({ onChoose }: Props) {
         <div className="absolute -inset-4 rounded-3xl bg-gradient-to-r from-indigo-500/20 via-fuchsia-500/20 to-emerald-500/20 blur-3xl" />
         <div className="relative rounded-3xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl sm:p-12">
           <div className="mb-8 text-center">
-            <p className="text-xs uppercase tracking-[0.3em] text-indigo-400">Welcome</p>
+            <p className="text-xs uppercase tracking-[0.3em] text-indigo-400">Bienvenida</p>
             <h1 className="mt-3 bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-4xl font-bold text-transparent sm:text-5xl">
-              How do you want to study?
+              ¿Cómo quieres estudiar?
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-slate-400">
-              Pick your path. You can change this any time from settings.
+              Elige tu camino. Puedes cambiarlo cuando quieras desde ajustes.
             </p>
           </div>
 
           <div className="grid gap-5 sm:grid-cols-2">
             <ModeCard
-              title="Free mode"
-              subtitle="Explore on your own"
-              description="Jump straight into the app. Pick tools yourself: flashcards, tests, summaries, chat with the tutor."
+              title="Modo libre"
+              subtitle="Explora por tu cuenta"
+              description="Entra directamente en la app. Elige tú las herramientas: tarjetas, exámenes, resúmenes, chat con el tutor."
               gradient="from-slate-700 via-slate-600 to-slate-500"
-              badge="Full control"
+              badge="Control total"
               onClick={() => onChoose("free")}
             />
             <ModeCard
-              title="Guided by personality"
-              subtitle="3-min quiz first"
-              description="Take a quick color test. We recommend study methods that match how you learn best — tests, flashcards, summaries, and more."
+              title="Guiado por personalidad"
+              subtitle="Test rápido de 3 min"
+              description="Haz un test de colores rápido. Te recomendaremos métodos de estudio que encajen con tu forma de aprender — exámenes, tarjetas, resúmenes y más."
               gradient="from-indigo-500 via-fuchsia-500 to-rose-500"
-              badge="Recommended"
+              badge="Recomendado"
               onClick={() => onChoose("guided")}
               highlight
             />
@@ -134,7 +134,7 @@ function ModeCard({ title, subtitle, description, gradient, badge, onClick, high
         <h2 className="text-2xl font-bold text-white">{title}</h2>
         <p className="mt-3 text-sm leading-relaxed text-slate-400">{description}</p>
         <div className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-white">
-          Choose
+          Elegir
           <span className="transition group-hover:translate-x-1">→</span>
         </div>
       </div>
